@@ -4,9 +4,26 @@ import { createClient } from '@/lib/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
   const { supabase, response } = createClient(request);
-  
-  // The redirection logic has been removed as requested to stop the redirect loop.
-  // The middleware will no longer redirect users to the login page.
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const { pathname } = request.nextUrl;
+
+  // Si no hay sesión y el usuario intenta acceder a una ruta protegida (que no sea login, register, etc.)
+  if (!session && !['/login', '/register', '/reset-password'].includes(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
+  // Si hay sesión y el usuario intenta acceder a login, register o la raíz, lo redirigimos al dashboard
+  if (session && ['/login', '/register', '/reset-password', '/'].includes(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
+  }
 
   return response;
 }
