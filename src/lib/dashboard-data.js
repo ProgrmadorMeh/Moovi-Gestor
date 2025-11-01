@@ -2,6 +2,7 @@
 
 import { createServerClient } from '@/lib/supabaseServer';
 import { cache } from 'react';
+import { getAllProductsCached } from './data';
 
 // --- Helpers ---
 const getThirtyDaysAgo = () => {
@@ -20,30 +21,19 @@ export const getDashboardPageData = cache(async () => {
 
   // Realizamos todas las consultas a la base de datos en paralelo
   const [
-    lowStockCelularesRes,
-    lowStockAccesoriosRes,
+    allProducts,
     recentSalesRes,
     salesDataRes,
   ] = await Promise.all([
-    // 1. Pedimos celulares con bajo stock.
-    supabase
-      .from('celulares')
-      .select('id, model, stock, brand, color')
-      .gt('stock', 0)
-      .lt('stock', 10),
-    // 2. Pedimos accesorios con bajo stock.
-    supabase
-      .from('accesorios')
-      .select('id, model, stock, brand, color')
-      .gt('stock', 0)
-      .lt('stock', 10),
-    // 3. Obtenemos las 5 ventas más recientes.
+    // 1. Obtenemos TODOS los productos usando la función centralizada.
+    getAllProductsCached(true), // true para forzar refresh y tener datos frescos
+    // 2. Obtenemos las 5 ventas más recientes.
     supabase
       .from('orders')
       .select('id, created_at, payer_email, status, amount')
       .order('created_at', { ascending: false })
       .limit(5),
-    // 4. Obtenemos los datos de ventas para las métricas y el gráfico.
+    // 3. Obtenemos los datos de ventas para las métricas y el gráfico.
     supabase
       .from('orders')
       .select('amount, status, date_approved')
@@ -52,13 +42,8 @@ export const getDashboardPageData = cache(async () => {
   ]);
 
   // --- Procesamiento de Datos ---
-  // Combinamos productos de ambas tablas.
-  const lowStockCelulares = lowStockCelularesRes.data || [];
-  const lowStockAccesorios = lowStockAccesoriosRes.data || [];
-  const lowStockProducts = [...lowStockCelulares, ...lowStockAccesorios].map(p => ({
-    ...p,
-    brand: p.brand || 'Sin Marca',
-  }));
+  // Filtramos productos con bajo stock desde la lista completa.
+  const lowStockProducts = allProducts.filter(p => p.stock > 0 && p.stock < 10);
 
   const recentSales = recentSalesRes.data || [];
   const salesData = salesDataRes.data || [];
@@ -89,7 +74,7 @@ export const getDashboardPageData = cache(async () => {
     recentSales,
     chartData,
     errors: {
-      products: lowStockCelularesRes.error || lowStockAccesoriosRes.error,
+      products: null, // Ya no hay error de productos separado
       recentSales: recentSalesRes.error,
       salesData: salesDataRes.error,
     },
