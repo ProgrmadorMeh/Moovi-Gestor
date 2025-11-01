@@ -52,8 +52,8 @@ export default function LoginPage() {
         title: "¡Bienvenido de vuelta!",
         description: "Has iniciado sesión correctamente.",
       });
-      // With middleware disabled, we navigate directly to the dashboard.
-      router.push('/dashboard');
+      // Let the middleware handle the redirect.
+      router.refresh();
     } else {
       toast({
         variant: "destructive",
