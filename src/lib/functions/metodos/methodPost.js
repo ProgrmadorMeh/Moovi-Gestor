@@ -1,12 +1,15 @@
+import { supabase } from '../../supabaseClient.js';
+
 export async function methodPost(datos, tabla) {
   for (const [key, value] of Object.entries(datos)) {
-    if (!value && key !== 'description' && key !== 'imei' && key !== 'files') {
+    if (!value && key !== 'description' && key !== 'imei' && key !== 'imageUrl' && key !== 'files') {
       return { success: false, message: `El campo "${key}" es obligatorio`, data: null };
     }
   }
 
   try {
-    if (tabla === 'celulares' && datos.brand) {
+    // Lógica para manejar la marca del producto
+    if ((tabla === 'celulares' || tabla === 'accesorios') && datos.brand) {
       const { data: marcaExistente, error: marcaError } = await supabase
         .from('marcas')
         .select('id')
@@ -29,21 +32,22 @@ export async function methodPost(datos, tabla) {
         marcaId = nuevaMarca.id;
       }
 
-      datos.id_brand = marcaId;
+      datos.id_marca = marcaId;
       delete datos.brand;
     }
 
-    // 🔹 Subida múltiple de imágenes (si existen)
+    // Subida múltiple de imágenes (si existen)
     if (datos.files && Array.isArray(datos.files) && datos.files.length > 0) {
       const uploadedUrls = [];
+      const randomString = () => Math.random().toString(36).substring(2);
 
       for (const file of datos.files.slice(0, 4)) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${crypto.randomUUID()}.${fileExt}`;
-        const filePath = `productos/${fileName}`;
+        const fileName = `${randomString()}-${Date.now()}.${fileExt}`;
+        const filePath = `public/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('imagenes')
+          .from('celImagen')
           .upload(filePath, file);
 
         if (uploadError) {
@@ -51,17 +55,19 @@ export async function methodPost(datos, tabla) {
         }
 
         const { data: publicUrlData } = supabase.storage
-          .from('imagenes')
+          .from('celImagen')
           .getPublicUrl(filePath);
-
+        
         uploadedUrls.push(publicUrlData.publicUrl);
       }
 
-      datos.imageUrls = uploadedUrls;
-      delete datos.files;
+      datos.imageUrl = uploadedUrls; // Cambiado de imageUrls a imageUrl
     }
+    
+    // Eliminar 'files' del objeto de datos antes de insertar
+    delete datos.files;
 
-    // 🔹 Insertar el celular
+    // Insertar el producto
     const { data, error } = await supabase.from(tabla).insert(datos).select();
 
     if (error) {
