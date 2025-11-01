@@ -28,7 +28,7 @@ const formatCurrency = (amount: number) => {
 };
 
 const getStatusVariant = (status: string) => {
-  const s = status.toLowerCase();
+  const s = status ? status.toLowerCase() : '';
   if (s === 'approved' || s === 'accredited') return 'secondary';
   if (s === 'rejected' || s === 'cancelled') return 'destructive';
   return 'outline';
@@ -43,60 +43,32 @@ export default function DashboardPage() {
     recentSales: Order[];
     chartData: { date: string; sales: number }[];
   } | null>(null);
-  const [errorState, setErrorState] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorState, setErrorState] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const result = await getDashboardPageData();
         if (result.errors.products || result.errors.recentSales || result.errors.salesData) {
-          // We won't throw an error to avoid redirects, just log it.
-          console.error('Error al cargar los datos del dashboard');
-          setErrorState('Error al cargar los datos del dashboard');
+          console.error('Error al cargar datos del dashboard:', {
+            products: result.errors.products,
+            sales: result.errors.recentSales,
+            chart: result.errors.salesData,
+          });
+          setErrorState('Algunos componentes no se pudieron cargar. La base de datos puede no estar disponible.');
         }
         setData(result);
       } catch (err: any) {
-        setErrorState(err.message);
+        setErrorState(err.message || 'Error de conexión.');
+        setData(null); // Asegurarse que no haya datos viejos
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
   }, []);
-
-  if (errorState) {
-    return (
-        <div className="flex flex-col gap-6">
-            <header>
-                <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
-                <p className="text-muted-foreground">Moovi: La eficiencia se mueve contigo.</p>
-            </header>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-destructive">Error</CardTitle>
-                    <CardDescription>
-                        No se pudieron cargar los datos del dashboard. Esto puede suceder si no estás autenticado.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p>Por favor, intenta <a href="/login" className="underline">iniciar sesión</a> de nuevo. Si el problema persiste, contacta al soporte.</p>
-                    <p className="text-sm text-muted-foreground mt-4">Detalle: {errorState}</p>
-                </CardContent>
-            </Card>
-        </div>
-    );
-  }
-
-  if (!data) {
-    return <div>Cargando dashboard...</div>;
-  }
-
-  const {
-    totalRevenue,
-    totalSalesCount,
-    lowStockProducts,
-    newSalesToday,
-    recentSales,
-    chartData,
-  } = data;
   
   return (
     <div className="flex flex-col gap-6">
@@ -106,6 +78,17 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Moovi: La eficiencia se mueve contigo.</p>
       </header>
 
+      {errorState && !loading && (
+        <Card className="bg-destructive/10 border-destructive">
+            <CardHeader>
+                <CardTitle className="text-destructive">Atención</CardTitle>
+                <CardDescription className="text-destructive">
+                    {errorState}
+                </CardDescription>
+            </CardHeader>
+        </Card>
+      )}
+
       {/* Tarjetas de métricas */}
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -114,7 +97,10 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
+            {loading ? <div className="text-2xl font-bold">Cargando...</div> :
+             data ? <div className="text-2xl font-bold">{formatCurrency(data.totalRevenue)}</div> :
+             <div className="text-sm text-destructive">No disponible</div>
+            }
             <p className="text-xs text-muted-foreground">Ventas aprobadas en los últimos 30 días.</p>
           </CardContent>
         </Card>
@@ -125,7 +111,10 @@ export default function DashboardPage() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{totalSalesCount}</div>
+            {loading ? <div className="text-2xl font-bold">Cargando...</div> :
+             data ? <div className="text-2xl font-bold">+{data.totalSalesCount}</div> :
+             <div className="text-sm text-destructive">No disponible</div>
+            }
             <p className="text-xs text-muted-foreground">Pedidos aprobados en los últimos 30 días.</p>
           </CardContent>
         </Card>
@@ -136,7 +125,10 @@ export default function DashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{lowStockProducts.length}</div>
+             {loading ? <div className="text-2xl font-bold">Cargando...</div> :
+             data ? <div className="text-2xl font-bold">{data.lowStockProducts.length}</div> :
+             <div className="text-sm text-destructive">No disponible</div>
+            }
             <p className="text-xs text-muted-foreground">Con menos de 10 unidades.</p>
           </CardContent>
         </Card>
@@ -147,7 +139,10 @@ export default function DashboardPage() {
             <PackageCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{newSalesToday}</div>
+            {loading ? <div className="text-2xl font-bold">Cargando...</div> :
+             data ? <div className="text-2xl font-bold">+{data.newSalesToday}</div> :
+             <div className="text-sm text-destructive">No disponible</div>
+            }
             <p className="text-xs text-muted-foreground">Pedidos aprobados hoy.</p>
           </CardContent>
         </Card>
@@ -156,7 +151,10 @@ export default function DashboardPage() {
       {/* Gráfico y ventas recientes */}
       <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <div className="lg:col-span-4">
-          <SalesChart data={chartData} />
+          {loading ? <Card><CardHeader><CardTitle>Cargando gráfico...</CardTitle></CardHeader><CardContent className="h-64"/></Card> :
+           data && data.chartData ? <SalesChart data={data.chartData} /> : 
+           <Card><CardHeader><CardTitle className="text-destructive">Gráfico no disponible</CardTitle></CardHeader><CardContent className="h-64"/></Card>
+          }
         </div>
 
         <Card className="lg:col-span-3">
@@ -166,7 +164,7 @@ export default function DashboardPage() {
               <CardDescription>Las últimas 5 transacciones de la tienda.</CardDescription>
             </div>
             <ExportExcelButton 
-              data={recentSales} 
+              data={data?.recentSales || []} 
               fileName="ventas_recientes"
               sheetName="Ventas"
             />
@@ -181,8 +179,9 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentSales.length > 0 ? (
-                  recentSales.map(order => (
+                {loading ? <TableRow><TableCell colSpan={3} className="text-center">Cargando...</TableCell></TableRow> :
+                 data && data.recentSales && data.recentSales.length > 0 ? (
+                  data.recentSales.map(order => (
                     <TableRow key={order.id}>
                       <TableCell>
                         <div className="font-medium">{order.payer_email || "No disponible"}</div>
@@ -198,7 +197,7 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center">No hay ventas recientes.</TableCell>
+                    <TableCell colSpan={3} className="text-center">No hay ventas recientes o no se pudieron cargar.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -222,8 +221,9 @@ export default function DashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {lowStockProducts.length > 0 ? (
-                lowStockProducts.map(product => (
+              {loading ? <TableRow><TableCell colSpan={2} className="text-center">Cargando...</TableCell></TableRow> :
+               data && data.lowStockProducts && data.lowStockProducts.length > 0 ? (
+                data.lowStockProducts.map(product => (
                   <TableRow key={product.id}>
                     <TableCell>
                       <div className="font-medium">{product.brand} {product.model}</div>
@@ -236,7 +236,7 @@ export default function DashboardPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center">No hay productos con bajo stock.</TableCell>
+                  <TableCell colSpan={2} className="text-center">No hay productos con bajo stock o no se pudieron cargar.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
