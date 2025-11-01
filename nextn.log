@@ -1,0 +1,44 @@
+
+> nextn@0.1.0 build
+> NODE_ENV=production next build
+
+   ▲ Next.js 15.3.3
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 18.0s
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/15) ...
+   Generating static pages (3/15) 
+   Generating static pages (7/15) 
+   Generating static pages (11/15) 
+ ✓ Generating static pages (15/15)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      140 B         101 kB
+├ ○ /_not-found                            988 B         102 kB
+├ ƒ /api/deleteUser                        140 B         101 kB
+├ ○ /dashboard                            106 kB         354 kB
+├ ○ /inventario                          15.1 kB         352 kB
+├ ○ /inventario/nuevo                    6.68 kB         221 kB
+├ ○ /login                               3.94 kB         189 kB
+├ ○ /register                            3.88 kB         189 kB
+├ ○ /reset-password                      3.61 kB         186 kB
+├ ○ /usuarios                            3.12 kB         330 kB
+├ ○ /ventas                              2.26 kB         333 kB
+└ ○ /ventas/nueva                        2.74 kB         217 kB
++ First Load JS shared by all             101 kB
+  ├ chunks/4bd1b696-585f70dd36fe363d.js  53.2 kB
+  ├ chunks/684-6fa171c0d7502ac8.js       45.9 kB
+  └ other shared chunks (total)          1.97 kB
+
+
+ƒ Middleware                             77.4 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
