@@ -23,7 +23,7 @@ export const getDashboardPageData = cache(async () => {
     // 1. OPTIMIZACIÓN: Pedimos a la DB solo los productos con bajo stock.
     supabase
       .from('celulares')
-      .select('id, model, stock, marcas(nombre), color')
+      .select('id, model, stock, brand, color')
       .gt('stock', 0)
       .lt('stock', 10),
 
@@ -47,7 +47,7 @@ export const getDashboardPageData = cache(async () => {
   const rawLowStockProducts = lowStockProductsRes.data || [];
   const lowStockProducts = rawLowStockProducts.map(p => ({
     ...p,
-    brand: p.marcas?.nombre || 'Sin Marca',
+    brand: p.brand || 'Sin Marca',
   }));
 
   const recentSales = recentSalesRes.data || [];
