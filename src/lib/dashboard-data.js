@@ -1,6 +1,6 @@
 'use server';
 
-import { createServerClient } from '@/lib/supabaseServer';
+import { supabase } from '../../src/lib/supabaseClient';
 import { cache } from 'react';
 import { getAllProductsCached } from './data';
 
@@ -16,7 +16,6 @@ const getThirtyDaysAgo = () => {
  * Realiza consultas específicas y eficientes para obtener solo los datos necesarios.
  */
 export const getDashboardPageData = cache(async () => {
-  const supabase = createServerClient();
   const thirtyDaysAgo = getThirtyDaysAgo();
 
   // Realizamos todas las consultas a la base de datos en paralelo

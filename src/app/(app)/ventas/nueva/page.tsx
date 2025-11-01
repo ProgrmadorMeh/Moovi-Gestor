@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,7 +34,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { products, users } from '@/lib/data';
+import { getAllProductsCached, getUsers } from '@/lib/data';
+import type { Product, User } from '@/lib/types';
 
 const saleSchema = z.object({
   product: z.string({ required_error: 'El producto es obligatorio.' }),
@@ -50,6 +52,34 @@ type SaleFormValues = z.infer<typeof saleSchema>;
 export default function NewSalePage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const [productsData, usersData] = await Promise.all([
+            getAllProductsCached(),
+            getUsers()
+        ]);
+        setProducts(productsData);
+        setUsers(usersData);
+      } catch (error) {
+          toast({
+              variant: 'destructive',
+              title: 'Error al cargar datos',
+              description: 'No se pudieron cargar los productos y usuarios.'
+          })
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [toast]);
+
 
   const form = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
@@ -81,6 +111,9 @@ export default function NewSalePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+             {loading ? (
+                <p>Cargando datos del formulario...</p>
+             ) : (
               <div className="grid gap-6">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <FormField
@@ -215,12 +248,15 @@ export default function NewSalePage() {
                     />
                 </div>
               </div>
+            )}
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
                 <Button variant="outline" asChild>
                     <Link href="/ventas">Cancelar</Link>
                 </Button>
-                <Button type="submit">Confirmar y Registrar Venta</Button>
+                <Button type="submit" disabled={loading || form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? 'Registrando...' : 'Confirmar y Registrar Venta'}
+                </Button>
             </CardFooter>
           </Card>
         </div>
