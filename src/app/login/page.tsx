@@ -52,9 +52,9 @@ export default function LoginPage() {
         title: "¡Bienvenido de vuelta!",
         description: "Has iniciado sesión correctamente.",
       });
-      // SOLUCIÓN: Usamos router.push() para una redirección explícita e inmediata.
-      // Esto es más robusto que router.refresh() y evita problemas de caché/timing.
-      router.push('/dashboard');
+      // SOLUCIÓN: Usamos router.refresh() para que el middleware se encargue de la redirección.
+      // Esto evita el conflicto y el bucle de redirecciones.
+      router.refresh();
     } else {
       toast({
         variant: "destructive",
