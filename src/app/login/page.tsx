@@ -52,9 +52,8 @@ export default function LoginPage() {
         title: "¡Bienvenido de vuelta!",
         description: "Has iniciado sesión correctamente.",
       });
-      // SOLUCIÓN: Usamos router.refresh() para que el middleware se encargue de la redirección.
-      // Esto evita el conflicto y el bucle de redirecciones.
-      router.refresh();
+      // With middleware disabled, we navigate directly to the dashboard.
+      router.push('/dashboard');
     } else {
       toast({
         variant: "destructive",
