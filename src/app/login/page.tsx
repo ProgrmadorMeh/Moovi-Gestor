@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { loginWithEmail } from "@/lib/functions/log/singIn.js";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { LogIn } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -33,6 +35,14 @@ const formSchema = z.object({
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    const clearSession = async () => {
+      // Clear any lingering session to prevent token errors on login page
+      await supabase.auth.signOut();
+    };
+    clearSession();
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,7 +62,6 @@ export default function LoginPage() {
         title: "¡Bienvenido de vuelta!",
         description: "Has iniciado sesión correctamente.",
       });
-      // Let the middleware handle the redirect.
       router.push('/dashboard');
     } else {
       toast({
