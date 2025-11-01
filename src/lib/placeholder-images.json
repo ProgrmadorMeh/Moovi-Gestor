@@ -1,0 +1,34 @@
+{
+  "placeholderImages": [
+    {
+      "id": "iphone-15-pro",
+      "description": "An iPhone 15 Pro in Titan Blue.",
+      "imageUrl": "https://images.unsplash.com/photo-1727113558310-cdee231d5384?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxzbWFydHBob25lJTIwYXBwbGV8ZW58MHx8fHwxNzYyMDI2MDEwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smartphone apple"
+    },
+    {
+      "id": "galaxy-s24-ultra",
+      "description": "A Samsung Galaxy S24 Ultra in Gray.",
+      "imageUrl": "https://images.unsplash.com/photo-1707438095940-1eee18e85400?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzbWFydHBob25lJTIwc2Ftc3VuZ3xlbnwwfHx8fDE3NjIwMjYwMTB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smartphone samsung"
+    },
+    {
+      "id": "pixel-8-pro",
+      "description": "A Google Pixel 8 Pro in Obsidian Black.",
+      "imageUrl": "https://images.unsplash.com/photo-1544275956-c92e9ae83542?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzbWFydHBob25lJTIwZ29vZ2xlfGVufDB8fHx8MTc2MjAyNjAxMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smartphone google"
+    },
+    {
+      "id": "xiaomi-13t",
+      "description": "A Xiaomi 13T in Alpine Blue.",
+      "imageUrl": "https://images.unsplash.com/photo-1655802326047-407fe37539ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxzbWFydHBob25lJTIweGlhb21pfGVufDB8fHx8MTc2MjAyNjAxMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smartphone xiaomi"
+    },
+    {
+      "id": "motorola-edge-40",
+      "description": "A Motorola Edge 40 in Nebula Green.",
+      "imageUrl": "https://images.unsplash.com/photo-1730226930658-e7eb0dc830a3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxzbWFydHBob25lJTIwbW90b3JvbGF8ZW58MHx8fHwxNzYyMDI2MDExfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smartphone motorola"
+    }
+  ]
+}
