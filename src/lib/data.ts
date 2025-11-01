@@ -14,7 +14,9 @@ function processProducts(products: any[]): Product[] {
   return products.map(p => {
     const basePrice = Number(p.salePrice) || 0;
     const discount = Number(p.discount) || 0;
-    const brand = p.marcas?.nombre || 'Sin Marca';
+    
+    // CORRECCIÓN: Acceder correctamente al nombre de la marca anidado.
+    const brand = (p.marcas && p.marcas.nombre) ? p.marcas.nombre : 'Sin Marca';
 
     let finalSalePrice = basePrice;
     let originalPrice: number | undefined = undefined;
