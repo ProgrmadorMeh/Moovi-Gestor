@@ -53,7 +53,7 @@ export default function LoginPage() {
         description: "Has iniciado sesión correctamente.",
       });
       // Let the middleware handle the redirect.
-      router.refresh();
+      router.push('/dashboard');
     } else {
       toast({
         variant: "destructive",
