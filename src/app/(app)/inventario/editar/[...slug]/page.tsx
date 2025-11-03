@@ -21,6 +21,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { methodPut } from '@/lib/functions/metodos/methodPut';
 import { methodGetById } from '@/lib/functions/metodos/methodGetById';
+import { methodPost } from '@/lib/functions/metodos/methodPost';
 import type { Product } from '@/lib/types';
 
 
@@ -77,17 +78,15 @@ export default function ProductFormPage() {
       setProductType(type);
       setProductId(id);
       setIsEditMode(true);
-    } else if (type) {
+    } else if (type === 'celular' || type === 'accesorio') {
        setProductType(type as 'celular' | 'accesorio');
        setIsEditMode(false);
        setIsLoading(false);
     } else {
-        // Por defecto, si no hay slug, es un celular nuevo
-        setProductType('celular');
-        setIsEditMode(false);
-        setIsLoading(false);
+        // Redirigir o mostrar un error si el slug no es válido
+        router.push('/inventario');
     }
-  }, [slug]);
+  }, [slug, router]);
 
   const form = useForm<FormValues>({
     resolver: (data, context, options) => {
@@ -111,7 +110,7 @@ export default function ProductFormPage() {
         if (result.success && result.data) {
           const productData = {
             ...result.data,
-            brand: result.data.nombre_marca,
+            brand: result.data.nombre_marca, // Mapear nombre_marca a brand
           };
           form.reset(productData);
 
@@ -119,7 +118,12 @@ export default function ProductFormPage() {
           if (productData.imageUrl && Array.isArray(productData.imageUrl)) {
             setExistingImageUrls(productData.imageUrl);
           } else if (productData.imageUrl && typeof productData.imageUrl === 'string') {
-            setExistingImageUrls([productData.imageUrl]);
+             try {
+                const parsed = JSON.parse(productData.imageUrl);
+                setExistingImageUrls(Array.isArray(parsed) ? parsed : [productData.imageUrl]);
+            } catch {
+                setExistingImageUrls([productData.imageUrl]);
+            }
           }
 
         } else {
@@ -180,9 +184,7 @@ export default function ProductFormPage() {
       // @ts-ignore
       payload.files = newFiles; 
     }
-    // Mantener las URLs existentes si no se suben nuevas, o si se quiere combinar
-    // Esto requiere un cambio en el backend (methodPut) para manejar `existingImageUrls`
-    // Por ahora, solo mandamos los archivos nuevos.
+    
     // @ts-ignore
     payload.imageUrl = existingImageUrls;
 
@@ -216,7 +218,7 @@ export default function ProductFormPage() {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="mx-auto grid max-w-5xl flex-1 auto-rows-max gap-4">
           <div className="flex justify-center">
-             <Tabs value={productType} onValueChange={(val) => !isEditMode && setProductType(val as 'celular' | 'accesorio')}>
+             <Tabs value={productType} onValueChange={(val) => !isEditMode && router.push(`/inventario/editar/${val}/${productId || ''}`)}>
               <TabsList>
                 <TabsTrigger value="celular" disabled={isEditMode && productType !== 'celular'}>Celular</TabsTrigger>
                 <TabsTrigger value="accesorio" disabled={isEditMode && productType !== 'accesorio'}>Accesorio</TabsTrigger>
