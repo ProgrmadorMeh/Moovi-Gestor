@@ -32,7 +32,7 @@ export async function methodPost(datos, tabla) {
         marcaId = nuevaMarca.id;
       }
 
-      datos.id_marca = marcaId;
+      datos.id_brand = marcaId;
       delete datos.brand;
     }
 

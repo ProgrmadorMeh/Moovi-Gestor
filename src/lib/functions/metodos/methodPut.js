@@ -41,7 +41,7 @@ export async function methodPut(tabla, datos){
         marcaId = nuevaMarca.id;
       }
 
-      campos.id_marca = marcaId;
+      campos.id_brand = marcaId;
       delete campos.brand;
     }
 
