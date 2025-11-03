@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { MoreHorizontal, Search } from 'lucide-react';
 
 import { methodDelete } from '@/lib/functions/metodos/methodDelete';
@@ -232,7 +233,9 @@ export function InventoryTable({ initialProducts, onProductDeleted }: InventoryT
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                              <DropdownMenuItem>Editar</DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                 <Link href={`/inventario/editar/${isCellphone(product) ? 'celular' : 'accesorio'}/${product.id}`}>Editar</Link>
+                              </DropdownMenuItem>
                               <DropdownMenuItem 
                                 className="text-destructive cursor-pointer"
                                 onClick={() => handleDelete(product.id, product.model)}>
