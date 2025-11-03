@@ -158,7 +158,9 @@ export function SalesTable({ initialOrders }: SalesTableProps) {
                         <DropdownMenuItem onClick={() => handleShowDetails(order.payment_data)}>
                           Ver detalle del pago
                         </DropdownMenuItem>
-                        <DropdownMenuItem>Contactar cliente</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => window.open(`mailto:${order.payer_email}`)}>
+                          Contactar cliente
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
