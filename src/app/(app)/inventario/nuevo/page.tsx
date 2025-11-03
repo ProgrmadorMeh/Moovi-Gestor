@@ -93,17 +93,25 @@ export default function NewProductPage() {
     form.reset(productType === 'celular' ? defaultCellphoneValues : defaultAccessoryValues);
   }, [productType, form]);
 
-  const handleFiles = (newFiles: FileList | null) => {
-    if (!newFiles) return;
-    const total = [...files, ...Array.from(newFiles)].slice(0, 4);
-    setFiles(total);
-    form.setValue('imageUrl', total);
+  const handleFiles = (filesToAdd: FileList | null) => {
+    if (!filesToAdd) return;
+    const combined = [...files, ...Array.from(filesToAdd)];
+    if (combined.length > 4) {
+      toast({
+        title: 'Límite de imágenes',
+        description: 'No puedes subir más de 4 imágenes.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    setFiles(combined);
+    form.setValue('imageUrl', combined);
   };
 
   const removeFile = (index: number) => {
-    const newFiles = files.filter((_, i) => i !== index);
-    setFiles(newFiles);
-    form.setValue('imageUrl', newFiles);
+    const updatedFiles = files.filter((_, i) => i !== index);
+    setFiles(updatedFiles);
+    form.setValue('imageUrl', updatedFiles);
   };
 
   async function onSubmit(data: CellphoneFormValues | AccessoryFormValues) {
@@ -144,15 +152,16 @@ export default function NewProductPage() {
 
             <CardContent>
               <div className="grid gap-6">
-                {/* --- Aquí usamos los nuevos componentes --- */}
                 <ProductDetailsFields control={form.control} productType={productType} />
                 <ProductPricingFields control={form.control} />
                 <ProductIdentificationFields 
                   control={form.control} 
                   productType={productType} 
-                  files={files} 
+                  newFiles={files} 
+                  existingImageUrls={[]}
                   handleFiles={handleFiles} 
-                  removeFile={removeFile} 
+                  removeNewFile={removeFile}
+                  removeExistingFile={() => {}}
                 />
                 <ProductDescriptionField control={form.control} />
               </div>
