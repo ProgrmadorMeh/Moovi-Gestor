@@ -2,7 +2,8 @@ import { supabase } from '../../supabaseClient.js';
 
 /**
  * Obtiene un solo registro de una tabla específica mediante su ID.
- * @param {Object} datos - Debe incluir `tabla` (string) e `id` (string o number).
+ * @param {string} tabla - El nombre de la tabla
+ * @param {string | number} id - El ID del registro a buscar
  * @returns {Promise<{ success: boolean, message: string, data: any | null }>}
  */
 
@@ -17,54 +18,57 @@ export async function methodGetById(tabla, id) {
   }
 
   try {
-    const { data, error } = await supabase
-      .from(tabla)
-      .select('*')
+    const isUserTable = tabla === 'user' || tabla === 'users';
+    
+    // El query builder para poder añadir joins condicionalmente
+    let query = supabase.from(tabla);
+    
+    // Construimos el SELECT
+    let selectString = '*';
+    if (tabla === 'celulares' || tabla === 'accesorios') {
+      selectString = '*, marcas(nombre)';
+    }
+
+    const { data, error } = await query
+      .select(selectString)
       .eq('id', id)
       .single(); // <- importante: solo devuelve un registro
 
     if (error) {
-      return {
-        success: false,
-        message: `Error al obtener el registro: ${error.message}`,
-        data: null,
-      };
-    }
-
-    // Si la tabla es "celulares", obtener el nombre de la marca
-    if (tabla === "celulares") {
-      const { data: dataMarca, error: errorMarca } = await supabase.from("marcas").select("*");
-
-      if (errorMarca) {
-        return {
+       // Si no se encuentra el registro, Supabase devuelve un error que podemos manejar.
+      if (error.code === 'PGRST116') {
+         return {
           success: false,
-          message: `Error al buscar marcas para "${tabla}": ${errorMarca.message}`,
+          message: `No se encontró ningún registro con el ID ${id} en la tabla "${tabla}".`,
           data: null,
         };
       }
-
-    // Agrega el nombre de la marca a cada celular
-      const marca = dataMarca.find(mar => mar.id === data.id_marca);
-      if (marca) {
-        data.nombre_marca = marca.nombre;
-      } else {
-        data.nombre_marca = "Null";
-      }
+      // Para otros errores, los lanzamos
+      throw error;
     }
+
+    let processedData = data;
+    // Hacemos el post-procesamiento si es necesario
+    if ((tabla === 'celulares' || tabla === 'accesorios') && data.marcas) {
+       processedData.nombre_marca = data.marcas.nombre;
+       // No borramos 'marcas' por si se usa en otro lado, pero podríamos hacerlo
+       // delete processedData.marcas;
+    }
+     
+    // No es necesario un procesamiento especial para la tabla de usuarios aquí
+    // porque el SELECT ya es simple.
 
     return {
       success: true,
       message: `Registro encontrado correctamente en la tabla "${tabla}".`,
-      data,
+      data: processedData,
     };
 
   } catch (err) {
     return {
       success: false,
-      message: `Error inesperado: ${err.message}`,
+      message: `Error inesperado al obtener por ID: ${err.message}`,
       data: null,
     };
   }
 }
-
-console.log(await methodGetById("celulares", "0575d36c-a8db-4992-8e3a-cb4d7a853994"))

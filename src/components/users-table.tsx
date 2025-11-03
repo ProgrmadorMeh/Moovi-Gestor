@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { MoreHorizontal } from 'lucide-react';
 import {
   Table,
@@ -108,7 +109,9 @@ export function UsersTable({ initialUsers, onUserDeleted }: UsersTableProps) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                      <DropdownMenuItem>Editar</DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/usuarios/editar/${user.id}`}>Editar</Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive cursor-pointer"
                         onClick={() => handleDeleteUser(user)}
