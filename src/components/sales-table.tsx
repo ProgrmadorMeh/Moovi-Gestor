@@ -9,6 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -17,6 +25,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 // --- Helper para dar formato a la moneda ---
 const formatCurrency = (amount: number, currency: string) => {
@@ -48,17 +58,24 @@ export function SalesTable({ initialOrders }: SalesTableProps) {
   const [orders] = useState<Order[]>(initialOrders);
   const [searchTerm, setSearchTerm] = useState('');
   const [isClient, setIsClient] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPaymentData, setSelectedPaymentData] = useState<any>(null);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleShowDetails = (paymentData: any) => {
+    setSelectedPaymentData(paymentData);
+    setIsModalOpen(true);
+  };
 
   // --- Filtrado de órdenes por término de búsqueda ---
   const filteredOrders = useMemo(() => orders.filter(
     (order) =>
       order.payer_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.payment_id.toString().includes(searchTerm.toLowerCase()) ||
-      order.items.some(item => item.title.toLowerCase().includes(searchTerm.toLowerCase()))
+      (order.items && order.items.some(item => item.title.toLowerCase().includes(searchTerm.toLowerCase())))
   ), [orders, searchTerm]);
 
   // --- Cálculo del total de ventas aprobadas ---
@@ -110,7 +127,7 @@ export function SalesTable({ initialOrders }: SalesTableProps) {
                   <TableCell className="font-medium">{order.payer_email}</TableCell>
                   
                   <TableCell>
-                    {order.items.map((item, idx) => (
+                    {order.items?.map((item, idx) => (
                       <div key={idx} className="text-sm">
                         {item.title} (x{item.quantity})
                       </div>
@@ -118,7 +135,7 @@ export function SalesTable({ initialOrders }: SalesTableProps) {
                   </TableCell>
 
                   <TableCell className="hidden md:table-cell">
-                    {isClient ? new Date(order.date_approved).toLocaleDateString('es-ES') : new Date(order.date_approved).toISOString().split('T')[0]}
+                    {isClient && order.date_approved ? new Date(order.date_approved).toLocaleDateString('es-ES') : new Date(order.created_at).toISOString().split('T')[0]}
                   </TableCell>
 
                   <TableCell>
@@ -138,7 +155,9 @@ export function SalesTable({ initialOrders }: SalesTableProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <DropdownMenuItem>Ver detalle del pago</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleShowDetails(order.payment_data)}>
+                          Ver detalle del pago
+                        </DropdownMenuItem>
                         <DropdownMenuItem>Contactar cliente</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -155,6 +174,26 @@ export function SalesTable({ initialOrders }: SalesTableProps) {
           </div>
         </CardFooter>
       </Card>
+      
+      {/* Modal para detalles de pago */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Detalle Completo de la Venta</DialogTitle>
+            <DialogDescription>
+              A continuación se muestra el objeto JSON completo recibido de Mercado Pago.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] rounded-md border p-4">
+            <pre className="text-sm">
+              {JSON.stringify(selectedPaymentData, null, 2)}
+            </pre>
+          </ScrollArea>
+           <DialogClose asChild>
+            <Button variant="outline">Cerrar</Button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

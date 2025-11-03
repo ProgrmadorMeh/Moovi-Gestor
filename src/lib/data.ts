@@ -97,9 +97,16 @@ export async function getOrders(refresh = false): Promise<Order[]> {
   }
 
   const processedOrders = data.map((order: any): Order => {
-    const paymentData = typeof order.payment_data === 'string' 
-      ? JSON.parse(order.payment_data) 
-      : order.payment_data;
+    let paymentData = null;
+    try {
+        paymentData = typeof order.payment_data === 'string' 
+            ? JSON.parse(order.payment_data) 
+            : order.payment_data;
+    } catch(e) {
+        console.error(`Error parsing payment_data for order ${order.id}:`, e);
+        paymentData = { error: "Could not parse JSON data." };
+    }
+    
 
     const items: OrderItem[] = paymentData?.additional_info?.items?.map((item: any) => ({
       title: item.title || 'Producto sin nombre',
@@ -118,6 +125,7 @@ export async function getOrders(refresh = false): Promise<Order[]> {
       date_approved: order.date_approved,
       created_at: order.created_at,
       items: items,
+      payment_data: paymentData
     };
   });
 

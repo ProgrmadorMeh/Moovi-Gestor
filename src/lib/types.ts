@@ -55,6 +55,7 @@ export type Order = {
   date_approved: string;
   created_at: string;
   items: OrderItem[];
+  payment_data: any; // Datos completos de la transacción
 };
 
 // --- VALORES POR DEFECTO ---
