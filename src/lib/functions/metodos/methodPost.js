@@ -1,11 +1,15 @@
 import { supabase } from '../../supabaseClient.js';
 
 export async function methodPost(datos, tabla) {
-  for (const [key, value] of Object.entries(datos)) {
-    if (!value && key !== 'description' && key !== 'imei' && key !== 'imageUrl' && key !== 'files') {
-      return { success: false, message: `El campo "${key}" es obligatorio`, data: null };
+  // Para la tabla 'user', los campos obligatorios son diferentes
+  if (tabla !== 'user') {
+    for (const [key, value] of Object.entries(datos)) {
+      if (!value && key !== 'description' && key !== 'imei' && key !== 'imageUrl' && key !== 'files') {
+        return { success: false, message: `El campo "${key}" es obligatorio`, data: null };
+      }
     }
   }
+
 
   try {
     // Lógica para manejar la marca del producto
@@ -67,7 +71,7 @@ export async function methodPost(datos, tabla) {
     // Eliminar 'files' del objeto de datos antes de insertar
     delete datos.files;
 
-    // Insertar el producto
+    // Insertar el registro
     const { data, error } = await supabase.from(tabla).insert(datos).select();
 
     if (error) {

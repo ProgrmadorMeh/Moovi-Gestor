@@ -6,6 +6,7 @@ import { UsersTable } from '@/components/users-table';
 import { useEffect, useState } from 'react';
 import type { User } from '@/lib/types';
 import { ExportExcelButton } from '@/components/forms/exel/exel-button';
+import Link from 'next/link';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -34,9 +35,11 @@ export default function UsersPage() {
             fileName="usuarios"
             sheetName="Usuarios"
           />
-          <Button>
-            <PlusCircle className="h-4 w-4 mr-2" /> Nuevo Usuario
-          </Button>
+          <Link href="/usuarios/nuevo" passHref>
+            <Button>
+              <PlusCircle className="h-4 w-4 mr-2" /> Nuevo Usuario
+            </Button>
+          </Link>
         </div>
       </div>
 
