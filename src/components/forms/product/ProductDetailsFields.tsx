@@ -33,7 +33,7 @@ export function ProductDetailsFields({ control, productType }: ProductDetailsFie
           render={({ field }) => (
             <FormItem>
               <FormLabel>Categoría *</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+              <Select onValueChange={field.onChange} value={field.value ?? ''}>
                 <FormControl>
                   <SelectTrigger><SelectValue placeholder="Selecciona una categoría" /></SelectTrigger>
                 </FormControl>
@@ -57,7 +57,7 @@ export function ProductDetailsFields({ control, productType }: ProductDetailsFie
         render={({ field }) => (
           <FormItem>
             <FormLabel>Marca *</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+            <Select onValueChange={field.onChange} value={field.value ?? ''}>
               <FormControl>
                 <SelectTrigger><SelectValue placeholder="Selecciona una marca" /></SelectTrigger>
               </FormControl>
@@ -83,7 +83,7 @@ export function ProductDetailsFields({ control, productType }: ProductDetailsFie
         render={({ field }) => (
           <FormItem>
             <FormLabel>Modelo *</FormLabel>
-            <FormControl><Input placeholder="Ej: iPhone 15 Pro, Cargador 20W" {...field} /></FormControl>
+            <FormControl><Input placeholder="Ej: iPhone 15 Pro, Cargador 20W" {...field} value={field.value ?? ''} /></FormControl>
             <FormMessage />
           </FormItem>
         )}
@@ -97,7 +97,7 @@ export function ProductDetailsFields({ control, productType }: ProductDetailsFie
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Capacidad (GB/TB) *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+                <Select onValueChange={field.onChange} value={field.value ?? ''}>
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Selecciona la capacidad" /></SelectTrigger>
                   </FormControl>
@@ -120,7 +120,7 @@ export function ProductDetailsFields({ control, productType }: ProductDetailsFie
         render={({ field }) => (
           <FormItem>
             <FormLabel>Color *</FormLabel>
-            <FormControl><Input placeholder="Ej: Negro, Blanco" {...field} /></FormControl>
+            <FormControl><Input placeholder="Ej: Negro, Blanco" {...field} value={field.value ?? ''} /></FormControl>
             <FormMessage />
           </FormItem>
         )}

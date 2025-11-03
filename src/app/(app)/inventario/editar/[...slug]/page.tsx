@@ -19,7 +19,6 @@ import {
 import { Form } from '@/components/ui/form';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
-import { methodPost } from '@/lib/functions/metodos/methodPost';
 import { methodPut } from '@/lib/functions/metodos/methodPut';
 import { methodGetById } from '@/lib/functions/metodos/methodGetById';
 import type { Product } from '@/lib/types';
@@ -68,7 +67,9 @@ export default function ProductFormPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [files, setFiles] = useState<File[]>([]);
+  // Un estado para los archivos nuevos y otro para los existentes
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
 
   useEffect(() => {
     const [type, id] = slug;
@@ -93,6 +94,11 @@ export default function ProductFormPage() {
       const schema = productType === 'celular' ? cellphoneSchema : accessorySchema;
       return zodResolver(schema)(data, context, options);
     },
+    // Valores por defecto para evitar errores de uncontrolled/controlled
+    defaultValues: {
+        brand: '', model: '', color: '', salePrice: 0, stock: 0, description: '', imei: '',
+        capacity: '', category: ''
+    }
   });
 
   useEffect(() => {
@@ -105,9 +111,17 @@ export default function ProductFormPage() {
         if (result.success && result.data) {
           const productData = {
             ...result.data,
-            brand: result.data.nombre_marca, // Asignar el nombre de la marca
+            brand: result.data.nombre_marca,
           };
           form.reset(productData);
+
+          // Guardar las URLs de las imágenes existentes
+          if (productData.imageUrl && Array.isArray(productData.imageUrl)) {
+            setExistingImageUrls(productData.imageUrl);
+          } else if (productData.imageUrl && typeof productData.imageUrl === 'string') {
+            setExistingImageUrls([productData.imageUrl]);
+          }
+
         } else {
           toast({
             title: 'Error',
@@ -120,22 +134,39 @@ export default function ProductFormPage() {
       };
       fetchProductData();
     } else if (!isEditMode && productType) {
-        form.reset(productType === 'celular' ? {} : { category: '' });
+        form.reset();
     }
   }, [isEditMode, productType, productId, form, router, toast]);
 
-  const handleFiles = (newFiles: FileList | null) => {
-    if (!newFiles) return;
-    const total = [...files, ...Array.from(newFiles)].slice(0, 4);
-    setFiles(total);
-    form.setValue('imageUrl', total);
+  const handleFiles = (filesToAdd: FileList | null) => {
+    if (!filesToAdd) return;
+    const combined = [...newFiles, ...Array.from(filesToAdd)];
+    const totalImageCount = combined.length + existingImageUrls.length;
+    
+    if (totalImageCount > 4) {
+      toast({
+        title: 'Límite de imágenes',
+        description: 'No puedes tener más de 4 imágenes en total.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    setNewFiles(combined);
+    form.setValue('imageUrl', combined); // Actualiza el form por si se usa en la validación
   };
 
-  const removeFile = (index: number) => {
-    const newFiles = files.filter((_, i) => i !== index);
-    setFiles(newFiles);
-    form.setValue('imageUrl', newFiles);
+  const removeNewFile = (index: number) => {
+    const updatedFiles = newFiles.filter((_, i) => i !== index);
+    setNewFiles(updatedFiles);
+    form.setValue('imageUrl', updatedFiles);
   };
+  
+  const removeExistingFile = (urlToRemove: string) => {
+    const updatedUrls = existingImageUrls.filter(url => url !== urlToRemove);
+    setExistingImageUrls(updatedUrls);
+    // Aquí podrías querer una lógica para marcar esta imagen para ser eliminada en el backend
+  };
+
 
   async function onSubmit(data: FormValues) {
     if (!productType) return;
@@ -143,11 +174,23 @@ export default function ProductFormPage() {
     const endpoint = productType === 'celular' ? 'celulares' : 'accesorios';
     let resp;
 
+    // Lógica para no sobreescribir imágenes si no se suben nuevas
+    const payload = { ...data, id: productId };
+    if (newFiles.length > 0) {
+      // @ts-ignore
+      payload.files = newFiles; 
+    }
+    // Mantener las URLs existentes si no se suben nuevas, o si se quiere combinar
+    // Esto requiere un cambio en el backend (methodPut) para manejar `existingImageUrls`
+    // Por ahora, solo mandamos los archivos nuevos.
+    // @ts-ignore
+    payload.imageUrl = existingImageUrls;
+
     if (isEditMode) {
-      const payload = { ...data, id: productId };
       resp = await methodPut(endpoint, payload);
     } else {
-      const payload = { ...data, files };
+      // @ts-ignore
+      payload.files = newFiles;
       resp = await methodPost(payload, endpoint);
     }
 
@@ -196,9 +239,11 @@ export default function ProductFormPage() {
                 <ProductIdentificationFields 
                   control={form.control} 
                   productType={productType} 
-                  files={files} 
+                  newFiles={newFiles}
+                  existingImageUrls={existingImageUrls}
                   handleFiles={handleFiles} 
-                  removeFile={removeFile} 
+                  removeNewFile={removeNewFile}
+                  removeExistingFile={removeExistingFile}
                 />
                 <ProductDescriptionField control={form.control} />
               </div>

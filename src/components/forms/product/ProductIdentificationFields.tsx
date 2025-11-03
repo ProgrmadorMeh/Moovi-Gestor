@@ -1,6 +1,6 @@
 'use client';
 
-import { Control, UseFormSetValue } from 'react-hook-form';
+import { Control } from 'react-hook-form';
 import { 
   FormControl, 
   FormField, 
@@ -13,18 +13,24 @@ import { Input } from "@/components/ui/input";
 interface ProductIdentificationFieldsProps {
   control: Control<any>;
   productType: 'celular' | 'accesorio';
-  files: File[];
+  newFiles: File[];
+  existingImageUrls: string[];
   handleFiles: (files: FileList | null) => void;
-  removeFile: (index: number) => void;
+  removeNewFile: (index: number) => void;
+  removeExistingFile: (url: string) => void;
 }
 
 export function ProductIdentificationFields({ 
   control, 
   productType, 
-  files, 
+  newFiles, 
+  existingImageUrls,
   handleFiles, 
-  removeFile 
+  removeNewFile,
+  removeExistingFile
 }: ProductIdentificationFieldsProps) {
+  const totalImages = newFiles.length + existingImageUrls.length;
+
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       {productType === 'celular' && (
@@ -48,15 +54,36 @@ export function ProductIdentificationFields({
           onDragOver={(e) => e.preventDefault()}
           className="border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:bg-muted"
         >
-          <input type="file" accept="image/*" multiple onChange={(e) => handleFiles(e.target.files)} className="hidden" id="imageInput" />
-          <label htmlFor="imageInput" className="cursor-pointer">Arrastra o selecciona hasta 4 imágenes</label>
+          <input 
+            type="file" 
+            accept="image/*" 
+            multiple 
+            onChange={(e) => handleFiles(e.target.files)} 
+            className="hidden" 
+            id="imageInput"
+            disabled={totalImages >= 4}
+          />
+          <label htmlFor="imageInput" className={`cursor-pointer ${totalImages >= 4 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            Arrastra o selecciona hasta {4 - totalImages} imágen(es) más
+          </label>
         </div>
-        {files.length > 0 && (
+        
+        {(existingImageUrls.length > 0 || newFiles.length > 0) && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            {files.map((file, index) => (
-              <div key={index} className="relative group">
+            {/* Render existing images */}
+            {existingImageUrls.map((url, index) => (
+              <div key={`existing-${index}`} className="relative group">
+                <img src={url} alt={`Imagen existente ${index + 1}`} className="rounded-md object-cover w-full h-32" />
+                <button type="button" onClick={() => removeExistingFile(url)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 text-xs opacity-80 hover:opacity-100">
+                  ✕
+                </button>
+              </div>
+            ))}
+            {/* Render new file previews */}
+            {newFiles.map((file, index) => (
+              <div key={`new-${index}`} className="relative group">
                 <img src={URL.createObjectURL(file)} alt={`preview-${index}`} className="rounded-md object-cover w-full h-32" />
-                <button type="button" onClick={() => removeFile(index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 text-xs opacity-80 hover:opacity-100">
+                <button type="button" onClick={() => removeNewFile(index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 text-xs opacity-80 hover:opacity-100">
                   ✕
                 </button>
               </div>
