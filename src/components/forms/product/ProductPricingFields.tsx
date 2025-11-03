@@ -23,7 +23,15 @@ export function ProductPricingFields({ control }: ProductPricingFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Precio de Venta ($) *</FormLabel>
-            <FormControl><Input type="number" step="0.01" {...field} value={field.value || ''} /></FormControl>
+            <FormControl>
+              <Input 
+                type="number" 
+                step="0.01" 
+                {...field} 
+                onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                value={field.value ?? ''} 
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
@@ -34,7 +42,14 @@ export function ProductPricingFields({ control }: ProductPricingFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Stock Inicial *</FormLabel>
-            <FormControl><Input type="number" {...field} value={field.value || ''} /></FormControl>
+            <FormControl>
+              <Input 
+                type="number" 
+                {...field} 
+                onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)}
+                value={field.value ?? ''} 
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
