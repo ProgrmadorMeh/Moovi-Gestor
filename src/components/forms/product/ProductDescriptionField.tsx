@@ -24,7 +24,12 @@ export function ProductDescriptionField({ control }: ProductDescriptionFieldProp
           <FormItem>
             <FormLabel>Descripción</FormLabel>
             <FormControl>
-              <Textarea placeholder="Breve descripción y características clave." className="resize-none" {...field} />
+              <Textarea 
+                placeholder="Breve descripción y características clave." 
+                className="resize-none" 
+                {...field} 
+                value={field.value ?? ''}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>

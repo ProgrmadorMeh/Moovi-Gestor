@@ -34,7 +34,7 @@ export function ProductIdentificationFields({
           render={({ field }) => (
             <FormItem>
               <FormLabel>IMEI / Serial</FormLabel>
-              <FormControl><Input placeholder="Opcional" {...field} /></FormControl>
+              <FormControl><Input placeholder="Opcional" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
