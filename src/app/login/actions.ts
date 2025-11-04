@@ -41,7 +41,7 @@ export async function login(formData: any) {
   }
 
   // Admin and Vendedor roles are allowed
-  if (userData.role !== "Admin" && userData.role !== "Vendedor") {
+  if (userData.role !== "admin" && userData.role !== "vendedor") {
     await supabase.auth.signOut();
     return {
       success: false,
