@@ -135,7 +135,7 @@ export function SalesTable({ initialOrders }: SalesTableProps) {
                   </TableCell>
 
                   <TableCell className="hidden md:table-cell">
-                    {isClient && order.date_approved ? new Date(order.date_approved).toLocaleDateString('es-ES') : new Date(order.created_at).toISOString().split('T')[0]}
+                    {isClient && order.date_approved ? new Date(order.date_approved.replace(/-/g, '/')).toLocaleDateString('es-ES') : new Date(order.created_at).toISOString().split('T')[0]}
                   </TableCell>
 
                   <TableCell>
