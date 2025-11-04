@@ -30,7 +30,7 @@ import { ProductDetailsFields } from '@/components/forms/product/ProductDetailsF
 import { ProductPricingFields } from '@/components/forms/product/ProductPricingFields';
 import { ProductIdentificationFields } from '@/components/forms/product/ProductIdentificationFields';
 import { ProductDescriptionField } from '@/components/forms/product/ProductDescriptionField';
-import { ProductSpecificationsField } from '@/components/forms/product/ProductSpecificationsField';
+import { ProductdataTecnicaField } from '@/components/forms/product/ProductSpecificationsField';
 
 // --- Esquemas ---
 const cellphoneSchema = z.object({
@@ -43,7 +43,7 @@ const cellphoneSchema = z.object({
   description: z.string().optional(),
   imei: z.string().optional(),
   imageUrl: z.any().optional(),
-  specifications: z.array(z.object({
+  dataTecnica: z.array(z.object({
     key: z.string().min(1, 'La característica no puede estar vacía.'),
     value: z.string().min(1, 'El valor no puede estar vacío.'),
   })).optional(),
@@ -101,7 +101,7 @@ export default function ProductFormPage() {
     // Valores por defecto para evitar errores de uncontrolled/controlled
     defaultValues: {
         brand: '', model: '', color: '', salePrice: 0, stock: 0, description: '', imei: '',
-        capacity: '', category: '', specifications: []
+        capacity: '', category: '', dataTecnica: []
     }
   });
 
@@ -118,10 +118,10 @@ export default function ProductFormPage() {
             brand: result.data.nombre_marca, // Mapear nombre_marca a brand
           };
 
-          if (productData.specifications && typeof productData.specifications === 'object') {
-            productData.specifications = Object.entries(productData.specifications).map(([key, value]) => ({ key, value }));
+          if (productData.dataTecnica && typeof productData.dataTecnica === 'object') {
+            productData.dataTecnica = Object.entries(productData.dataTecnica).map(([key, value]) => ({ key, value }));
           } else {
-            productData.specifications = [];
+            productData.dataTecnica = [];
           }
 
           form.reset(productData);
@@ -192,13 +192,13 @@ export default function ProductFormPage() {
 
     // Convertir especificaciones a JSON antes de enviar
     let finalData = { ...data };
-    if (productType === 'celular' && 'specifications' in finalData && Array.isArray(finalData.specifications)) {
-        const specsObject = finalData.specifications.reduce((acc: any, { key, value }) => {
+    if (productType === 'celular' && 'dataTecnica' in finalData && Array.isArray(finalData.dataTecnica)) {
+        const specsObject = finalData.dataTecnica.reduce((acc: any, { key, value }) => {
             if (key) acc[key] = value;
             return acc;
         }, {});
         // @ts-ignore
-        finalData.specifications = specsObject;
+        finalData.dataTecnica = specsObject;
     }
 
     const payload = { ...finalData, id: productId };
@@ -271,7 +271,7 @@ export default function ProductFormPage() {
                 />
                 <ProductDescriptionField control={form.control} />
                 {productType === 'celular' && (
-                  <ProductSpecificationsField control={form.control} />
+                  <ProductdataTecnicaField control={form.control} />
                 )}
               </div>
             </CardContent>

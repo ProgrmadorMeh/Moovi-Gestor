@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Control, useFieldArray } from 'react-hook-form';
@@ -19,9 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-interface ProductSpecificationsFieldProps {
+interface ProductdataTecnicaFieldProps {
   control: Control<any>;
 }
 
@@ -39,19 +40,37 @@ const commonKeys = [
   "Conectividad"
 ];
 
-export function ProductSpecificationsField({ control }: ProductSpecificationsFieldProps) {
-  const { fields, append, remove } = useFieldArray({
+export function ProductdataTecnicaField({ control }: ProductdataTecnicaFieldProps) {
+  const { fields, append, remove, update } = useFieldArray({
     control,
-    name: "specifications"
+    name: "dataTecnica"
   });
 
   // Local state to track which fields are using a custom key
   const [customKeyIndices, setCustomKeyIndices] = useState<Set<number>>(new Set());
 
+  // Initialize customKeyIndices based on initial form values
+  useEffect(() => {
+    const initialCustomIndices = new Set<number>();
+    fields.forEach((field, index) => {
+      // @ts-ignore
+      if (field.key && !commonKeys.includes(field.key)) {
+        initialCustomIndices.add(index);
+      }
+    });
+    setCustomKeyIndices(initialCustomIndices);
+  }, [fields.length]); // Depend on fields.length to re-evaluate when fields are added/removed
+
+
   const handleSelectChange = (index: number, value: string) => {
     const newCustomKeyIndices = new Set(customKeyIndices);
     if (value === 'otro') {
       newCustomKeyIndices.add(index);
+      // Clear the field value when switching to custom input
+      const currentField = fields[index];
+      // @ts-ignore
+      update(index, { ...currentField, key: '' });
+
     } else {
       newCustomKeyIndices.delete(index);
     }
@@ -104,7 +123,7 @@ export function ProductSpecificationsField({ control }: ProductSpecificationsFie
                 <div className="col-span-5">
                    <FormField
                     control={control}
-                    name={`specifications.${index}.key`}
+                    name={`dataTecnica.${index}.key`}
                     render={({ field }) => (
                       <FormItem>
                          {customKeyIndices.has(index) ? (
@@ -114,7 +133,9 @@ export function ProductSpecificationsField({ control }: ProductSpecificationsFie
                           ) : (
                             <Select onValueChange={(value) => {
                                 handleSelectChange(index, value);
-                                field.onChange(value === 'otro' ? '' : value);
+                                if (value !== 'otro') {
+                                    field.onChange(value);
+                                }
                             }} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
@@ -135,7 +156,7 @@ export function ProductSpecificationsField({ control }: ProductSpecificationsFie
                 <div className="col-span-6">
                     <FormField
                     control={control}
-                    name={`specifications.${index}.value`}
+                    name={`dataTecnica.${index}.value`}
                     render={({ field }) => (
                         <FormItem>
                         <FormControl>

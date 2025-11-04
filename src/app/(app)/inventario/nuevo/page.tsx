@@ -26,7 +26,7 @@ import { ProductDetailsFields } from '@/components/forms/product/ProductDetailsF
 import { ProductPricingFields } from '@/components/forms/product/ProductPricingFields';
 import { ProductIdentificationFields } from '@/components/forms/product/ProductIdentificationFields';
 import { ProductDescriptionField } from '@/components/forms/product/ProductDescriptionField';
-import { ProductSpecificationsField } from '@/components/forms/product/ProductSpecificationsField';
+import { ProductdataTecnicaField } from '@/components/forms/product/ProductSpecificationsField';
 
 // --- Esquemas y valores por defecto (sin cambios) ---
 const cellphoneSchema = z.object({
@@ -39,7 +39,7 @@ const cellphoneSchema = z.object({
   description: z.string().optional(),
   imei: z.string().optional(),
   imageUrl: z.any().optional(),
-  specifications: z.array(z.object({
+  dataTecnica: z.array(z.object({
     key: z.string().min(1, 'La característica no puede estar vacía.'),
     value: z.string().min(1, 'El valor no puede estar vacío.'),
   })).optional(),
@@ -68,7 +68,7 @@ const defaultCellphoneValues: Partial<CellphoneFormValues> = {
   stock: 0,
   description: '',
   imei: '',
-  specifications: [],
+  dataTecnica: [],
 };
 
 const defaultAccessoryValues: Partial<AccessoryFormValues> = {
@@ -124,13 +124,13 @@ export default function NewProductPage() {
     const endpoint = productType === 'celular' ? 'celulares' : 'accesorios';
     
     let finalData = { ...data };
-    if (productType === 'celular' && 'specifications' in finalData && Array.isArray(finalData.specifications)) {
-        const specsObject = finalData.specifications.reduce((acc: any, { key, value }) => {
+    if (productType === 'celular' && 'dataTecnica' in finalData && Array.isArray(finalData.dataTecnica)) {
+        const specsObject = finalData.dataTecnica.reduce((acc: any, { key, value }) => {
             if (key) acc[key] = value;
             return acc;
         }, {});
         // @ts-ignore
-        finalData.specifications = specsObject;
+        finalData.dataTecnica = specsObject;
     }
 
     const payload = { ...finalData, files };
@@ -182,7 +182,7 @@ export default function NewProductPage() {
                 />
                 <ProductDescriptionField control={form.control} />
                 {productType === 'celular' && (
-                  <ProductSpecificationsField control={form.control} />
+                  <ProductdataTecnicaField control={form.control} />
                 )}
               </div>
             </CardContent>
