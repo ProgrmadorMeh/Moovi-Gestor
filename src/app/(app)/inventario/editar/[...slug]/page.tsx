@@ -30,6 +30,7 @@ import { ProductDetailsFields } from '@/components/forms/product/ProductDetailsF
 import { ProductPricingFields } from '@/components/forms/product/ProductPricingFields';
 import { ProductIdentificationFields } from '@/components/forms/product/ProductIdentificationFields';
 import { ProductDescriptionField } from '@/components/forms/product/ProductDescriptionField';
+import { ProductSpecificationsField } from '@/components/forms/product/ProductSpecificationsField';
 
 // --- Esquemas ---
 const cellphoneSchema = z.object({
@@ -42,6 +43,10 @@ const cellphoneSchema = z.object({
   description: z.string().optional(),
   imei: z.string().optional(),
   imageUrl: z.any().optional(),
+  specifications: z.array(z.object({
+    key: z.string().min(1, 'La característica no puede estar vacía.'),
+    value: z.string().min(1, 'El valor no puede estar vacío.'),
+  })).optional(),
 });
 
 const accessorySchema = z.object({
@@ -96,7 +101,7 @@ export default function ProductFormPage() {
     // Valores por defecto para evitar errores de uncontrolled/controlled
     defaultValues: {
         brand: '', model: '', color: '', salePrice: 0, stock: 0, description: '', imei: '',
-        capacity: '', category: ''
+        capacity: '', category: '', specifications: []
     }
   });
 
@@ -112,6 +117,13 @@ export default function ProductFormPage() {
             ...result.data,
             brand: result.data.nombre_marca, // Mapear nombre_marca a brand
           };
+
+          if (productData.specifications && typeof productData.specifications === 'object') {
+            productData.specifications = Object.entries(productData.specifications).map(([key, value]) => ({ key, value }));
+          } else {
+            productData.specifications = [];
+          }
+
           form.reset(productData);
 
           // Guardar las URLs de las imágenes existentes
@@ -178,8 +190,18 @@ export default function ProductFormPage() {
     const endpoint = productType === 'celular' ? 'celulares' : 'accesorios';
     let resp;
 
-    // Lógica para no sobreescribir imágenes si no se suben nuevas
-    const payload = { ...data, id: productId };
+    // Convertir especificaciones a JSON antes de enviar
+    let finalData = { ...data };
+    if (productType === 'celular' && 'specifications' in finalData && Array.isArray(finalData.specifications)) {
+        const specsObject = finalData.specifications.reduce((acc: any, { key, value }) => {
+            if (key) acc[key] = value;
+            return acc;
+        }, {});
+        // @ts-ignore
+        finalData.specifications = specsObject;
+    }
+
+    const payload = { ...finalData, id: productId };
     if (newFiles.length > 0) {
       // @ts-ignore
       payload.files = newFiles; 
@@ -248,6 +270,9 @@ export default function ProductFormPage() {
                   removeExistingFile={removeExistingFile}
                 />
                 <ProductDescriptionField control={form.control} />
+                {productType === 'celular' && (
+                  <ProductSpecificationsField control={form.control} />
+                )}
               </div>
             </CardContent>
 
