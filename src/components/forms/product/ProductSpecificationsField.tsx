@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ProductSpecificationsFieldProps {
   control: Control<any>;
@@ -73,15 +74,11 @@ export function ProductSpecificationsField({ control }: ProductSpecificationsFie
                     />
                 </div>
                 <div className="col-span-1 flex items-center h-10">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => remove(index)}
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <Checkbox
+                        className="border-destructive text-destructive"
+                        aria-label="Eliminar especificación"
+                        onCheckedChange={() => remove(index)}
+                    />
                 </div>
             </div>
             ))}
