@@ -18,10 +18,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { loginWithEmail } from "@/lib/functions/log/singIn.js";
+import { login } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { LogIn } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { createBrowserClient } from "@supabase/ssr";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -35,6 +35,11 @@ const formSchema = z.object({
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
+
+  const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
   useEffect(() => {
     const clearSession = async () => {
@@ -55,14 +60,15 @@ export default function LoginPage() {
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const result = await loginWithEmail(values.email, values.password);
+    const result = await login(values);
 
     if (result.success) {
       toast({
         title: "¡Bienvenido de vuelta!",
         description: "Has iniciado sesión correctamente.",
       });
-      router.push('/dashboard');
+      // The middleware will handle the redirect, no need for router.push
+      router.refresh();
     } else {
       toast({
         variant: "destructive",

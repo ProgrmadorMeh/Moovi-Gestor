@@ -17,9 +17,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { logOut } from '@/lib/functions/log/logOut.js';
-import { supabase } from '@/lib/supabaseClient.js';
+import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import type { User as AuthUser } from '@supabase/supabase-js'
 
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -33,9 +34,14 @@ const pathToTitle: { [key: string]: string } = {
 export function AppHeader() {
   const pathname = usePathname();
   const title = pathToTitle[pathname] || 'Moovi';
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const router = useRouter();
   const { toast } = useToast();
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
     const getUser = async () => {
@@ -50,6 +56,7 @@ export function AppHeader() {
     if (result.success) {
       setUser(null);
       router.push('/login');
+      router.refresh();
       toast({
         title: 'Sesión Cerrada',
         description: 'Has cerrado sesión correctamente.',
