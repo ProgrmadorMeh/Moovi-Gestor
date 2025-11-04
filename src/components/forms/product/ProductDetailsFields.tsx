@@ -89,31 +89,6 @@ export function ProductDetailsFields({ control, productType }: ProductDetailsFie
         )}
       />
 
-      {/* Capacidad (Solo para Celulares) */}
-      {productType === 'celular' && (
-         <FormField
-            control={control}
-            name="capacity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Capacidad (GB/TB) *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                  <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Selecciona la capacidad" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="128GB">128GB</SelectItem>
-                    <SelectItem value="256GB">256GB</SelectItem>
-                    <SelectItem value="512GB">512GB</SelectItem>
-                    <SelectItem value="1TB">1TB</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-      )}
-
       <FormField
         control={control}
         name="color"

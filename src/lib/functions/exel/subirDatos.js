@@ -49,7 +49,6 @@ export async function subirDatos(file, productType) {
                 stock: Number(row.stock) || 0,
                 description: row.description || '',
                 // Campos específicos de celular
-                capacity: productType === 'celular' ? row.capacity || '' : undefined,
                 imei: productType === 'celular' ? row.imei || '' : undefined,
                 // Campo específico de accesorio
                 category: productType === 'accesorio' ? row.category || '' : undefined

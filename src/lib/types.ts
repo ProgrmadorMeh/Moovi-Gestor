@@ -19,7 +19,6 @@ type BaseProduct = {
 // Tipo específico para celulares, extiende la base y añade sus propios campos.
 export type Cellphone = BaseProduct & {
   imei: string;
-  capacity: string;
   // Excluimos campos de accesorios para evitar solapamientos.
   category?: never;
 };
@@ -29,7 +28,6 @@ export type Accessory = BaseProduct & {
   category: string;
   // Excluimos campos de celulares.
   imei?: never;
-  capacity?: never;
 };
 
 // El tipo `Product` es una unión de `Cellphone` o `Accessory`.
@@ -77,7 +75,6 @@ export const defaultBase = {
   color: "No especificado",
   // Campos específicos con valores por defecto
   imei: "N/A",
-  capacity: "N/A",
   category: "General",
 };
 

@@ -36,7 +36,6 @@ import { ProductdataTecnicaField } from '@/components/forms/product/ProductSpeci
 const cellphoneSchema = z.object({
   brand: z.string({ required_error: 'La marca es obligatoria.' }).min(1, 'La marca es obligatoria.'),
   model: z.string().min(1, 'El modelo es obligatorio.'),
-  capacity: z.string({ required_error: 'La capacidad es obligatoria.' }).min(1, 'La capacidad es obligatoria.'),
   color: z.string().min(1, 'El color es obligatorio.'),
   salePrice: z.coerce.number().positive('El precio de venta debe ser positivo.'),
   stock: z.coerce.number().int().min(0, 'El stock no puede ser negativo.'),
@@ -101,7 +100,7 @@ export default function ProductFormPage() {
     // Valores por defecto para evitar errores de uncontrolled/controlled
     defaultValues: {
         brand: '', model: '', color: '', salePrice: 0, stock: 0, description: '', imei: '',
-        capacity: '', category: '', dataTecnica: []
+        category: '', dataTecnica: []
     }
   });
 

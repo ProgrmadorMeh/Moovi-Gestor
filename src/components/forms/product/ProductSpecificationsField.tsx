@@ -31,6 +31,7 @@ const commonKeys = [
   "Procesador",
   "RAM",
   "Almacenamiento",
+  "Capacidad",
   "Cámara Principal",
   "Cámara Frontal",
   "Batería",

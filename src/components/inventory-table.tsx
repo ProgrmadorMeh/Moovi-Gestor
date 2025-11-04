@@ -69,7 +69,7 @@ const getDisplayImage = (imageUrl: string | string[] | null): string => {
 
 // --- Helper para identificar el tipo de producto ---
 function isCellphone(product: Product): product is Cellphone {
-  return 'capacity' in product && product.capacity !== 'N/A' && 'imei' in product;
+  return 'imei' in product;
 }
 
 interface InventoryTableProps {
