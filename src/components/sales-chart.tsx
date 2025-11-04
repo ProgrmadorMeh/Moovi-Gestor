@@ -44,7 +44,7 @@ export function SalesChart({ data }: SalesChartProps) {
                 tickMargin={10}
                 axisLine={false}
                 tickFormatter={(value) => {
-                  const date = new Date(value);
+                  const date = new Date(value.replace(/-/g, '/'));
                   return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
                 }}
               />
