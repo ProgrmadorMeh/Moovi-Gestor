@@ -5,13 +5,13 @@ import {
   FormControl, 
   FormField, 
   FormItem, 
-  FormLabel, 
   FormMessage 
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
 
 interface ProductSpecificationsFieldProps {
   control: Control<any>;
@@ -40,6 +40,17 @@ export function ProductSpecificationsField({ control }: ProductSpecificationsFie
         </div>
       
         <div className="grid gap-4">
+            {fields.length > 0 && (
+                 <div className="grid grid-cols-12 gap-x-4 items-start">
+                    <div className="col-span-5">
+                       <Label>Característica</Label>
+                    </div>
+                     <div className="col-span-6">
+                        <Label>Valor</Label>
+                    </div>
+                </div>
+            )}
+
             {fields.map((item, index) => (
             <div key={item.id} className="grid grid-cols-12 gap-x-4 items-start">
                 <div className="col-span-5">
@@ -48,7 +59,6 @@ export function ProductSpecificationsField({ control }: ProductSpecificationsFie
                     name={`specifications.${index}.key`}
                     render={({ field }) => (
                         <FormItem>
-                        {index === 0 && <FormLabel>Característica</FormLabel>}
                         <FormControl>
                             <Input placeholder="Ej: Pantalla" {...field} />
                         </FormControl>
@@ -63,7 +73,6 @@ export function ProductSpecificationsField({ control }: ProductSpecificationsFie
                     name={`specifications.${index}.value`}
                     render={({ field }) => (
                         <FormItem>
-                        {index === 0 && <FormLabel>Valor</FormLabel>}
                         <FormControl>
                             <Input placeholder="Ej: 6.7 pulgadas Super Retina XDR" {...field} />
                         </FormControl>
