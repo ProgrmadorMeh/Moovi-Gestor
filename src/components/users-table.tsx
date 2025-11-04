@@ -32,6 +32,11 @@ interface UsersTableProps {
 
 export function UsersTable({ initialUsers, onUserDeleted }: UsersTableProps) {
   const [users, setUsers] = useState<User[]>(initialUsers);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     setUsers(initialUsers);
@@ -97,7 +102,7 @@ export function UsersTable({ initialUsers, onUserDeleted }: UsersTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                   {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Nunca'}
+                   {isClient && user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Nunca'}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

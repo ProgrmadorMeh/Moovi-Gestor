@@ -55,6 +55,11 @@ export function DashboardClientPage({ initialData }: DashboardClientPageProps) {
   const [data, setData] = useState<DashboardData | null>(initialData);
   const [loading, setLoading] = useState(!initialData);
   const [errorState, setErrorState] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (initialData.errors.products || initialData.errors.recentSales || initialData.errors.salesData) {
@@ -183,7 +188,7 @@ export function DashboardClientPage({ initialData }: DashboardClientPageProps) {
                       <TableCell>
                         <div className="font-medium">{order.payer_email || "No disponible"}</div>
                         <div className="text-sm text-muted-foreground">
-                          {new Date(order.created_at).toLocaleString('es-AR')}
+                          {isClient ? new Date(order.created_at).toLocaleString('es-AR') : ''}
                         </div>
                       </TableCell>
                       <TableCell>
