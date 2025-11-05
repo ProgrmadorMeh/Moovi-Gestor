@@ -1,3 +1,4 @@
+
 import { methodGetList } from "@/lib/functions/metodos/methodGetList";
 import type { Cellphone, Accessory, Product, Order, OrderItem, User } from "@/lib/types";
 
@@ -69,7 +70,7 @@ export async function getAllProductsCached(refresh = false): Promise<Product[]> 
  */
 export async function getCellphonesCached(refresh = false): Promise<Cellphone[]> {
   const allProducts = await getAllProductsCached(refresh);
-  return allProducts.filter((p): p is Cellphone => "capacity" in p);
+  return allProducts.filter((p): p is Cellphone => "imei" in p);
 }
 
 /**
