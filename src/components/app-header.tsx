@@ -29,7 +29,6 @@ const pathToTitle: { [key: string]: string } = {
   '/inventario': 'Inventario',
   '/inventario/nuevo': 'Cargar Nuevo Celular',
   '/ventas': 'Registro de Ventas',
-  '/ventas/nueva': 'Registrar Nueva Venta',
   '/usuarios': 'Administración de Usuarios',
 };
 

@@ -5,9 +5,6 @@ import { SalesTable } from '@/components/sales-table';
 import { useEffect, useState } from 'react';
 import type { Order } from '@/lib/types';
 import { ExportExcelButton } from '@/components/forms/exel/exel-button';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
 
 export default function SalesPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -35,12 +32,6 @@ export default function SalesPage() {
             fileName="historial_ventas"
             sheetName="Ventas"
           />
-          <Link href="/ventas/nueva" passHref>
-            <Button>
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Nueva Venta
-            </Button>
-          </Link>
         </div>
       </div>
 
