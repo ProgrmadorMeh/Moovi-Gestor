@@ -21,6 +21,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import type { User as AuthUser } from '@supabase/supabase-js'
+import { Skeleton } from './ui/skeleton';
 
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -35,6 +36,7 @@ export function AppHeader() {
   const pathname = usePathname();
   const title = pathToTitle[pathname] || 'Moovi';
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -47,6 +49,7 @@ export function AppHeader() {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      setLoading(false);
     };
     getUser();
   }, []);
@@ -70,15 +73,13 @@ export function AppHeader() {
     }
   };
 
-  return (
-    <header className="flex h-14 items-center gap-4 border-b bg-background/60 px-4 backdrop-blur-sm sm:px-6 sticky top-0 z-30">
-      <SidebarTrigger className="md:hidden" />
-      
-      <div className="flex-1">
-        <h1 className="font-semibold text-lg hidden sm:block">{title}</h1>
-      </div>
+  const renderUserAuth = () => {
+    if (loading) {
+      return <Skeleton className="h-8 w-8 rounded-full" />;
+    }
 
-      {user ? (
+    if (user) {
+      return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -110,20 +111,34 @@ export function AppHeader() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      ) : (
-        <div className="flex items-center gap-2">
-          <Link href="/login" passHref>
-            <Button variant="outline">
-              <LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión
-            </Button>
-          </Link>
-          <Link href="/register" passHref>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" /> Registrarse
-            </Button>
-          </Link>
-        </div>
-      )}
+      );
+    }
+    
+    return (
+      <div className="flex items-center gap-2">
+        <Link href="/login" passHref>
+          <Button variant="outline">
+            <LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión
+          </Button>
+        </Link>
+        <Link href="/register" passHref>
+          <Button>
+            <UserPlus className="mr-2 h-4 w-4" /> Registrarse
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <header className="flex h-14 items-center gap-4 border-b bg-background/60 px-4 backdrop-blur-sm sm:px-6 sticky top-0 z-30">
+      <SidebarTrigger className="md:hidden" />
+      
+      <div className="flex-1">
+        <h1 className="font-semibold text-lg hidden sm:block">{title}</h1>
+      </div>
+
+      {renderUserAuth()}
     </header>
   );
 }
