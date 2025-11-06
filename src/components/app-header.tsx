@@ -20,7 +20,7 @@ import { logOut } from '@/lib/functions/log/logOut.js';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import type { User as AuthUser } from '@supabase/supabase-js'
+import type { User as AppUser } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
 
 const pathToTitle: { [key: string]: string } = {
@@ -35,7 +35,7 @@ const pathToTitle: { [key: string]: string } = {
 export function AppHeader() {
   const pathname = usePathname();
   const title = pathToTitle[pathname] || 'Moovi';
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
@@ -46,12 +46,29 @@ export function AppHeader() {
   );
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+    const getUserData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // Fetch full user profile from 'user' table
+        const { data: userData, error } = await supabase
+          .from('user')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user profile:', error);
+          setUser(null); // Fallback if profile not found
+        } else {
+          setUser(userData as AppUser);
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     };
-    getUser();
+    getUserData();
   }, []);
 
   const handleLogout = async () => {
@@ -88,13 +105,13 @@ export function AppHeader() {
               className="overflow-hidden rounded-full"
             >
               <Avatar>
-                <AvatarImage src="https://picsum.photos/seed/user-avatar/40/40" alt="Avatar de usuario" />
+                <AvatarImage src={user.avatarUrl?.trim() || 'https://pwxpxouatzzxvvvszdnx.supabase.co/storage/v1/object/public/userImage/userDefault.jpg'} alt="Avatar de usuario" />
                 <AvatarFallback>{user.email ? user.email.slice(0, 2).toUpperCase() : 'US'}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+            <DropdownMenuLabel>{user.name || user.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />
