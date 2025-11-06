@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { MoreHorizontal, Search } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 
 import { methodDelete } from '@/lib/functions/metodos/methodDelete';
 import type { Product, Cellphone, Accessory } from '@/lib/types';
@@ -30,8 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 
 // --- Helper para obtener la URL de la imagen ---
 const getDisplayImage = (imageUrl: string | string[] | null): string => {
@@ -73,51 +72,20 @@ function isCellphone(product: Product): product is Cellphone {
 }
 
 interface InventoryTableProps {
-  initialProducts: Product[];
+  products: Product[];
   onProductDeleted: () => void;
+  isLoading: boolean;
+  totalProducts: number;
 }
 
-export function InventoryTable({ initialProducts, onProductDeleted }: InventoryTableProps) {
-  const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(initialProducts);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
-
-  useEffect(() => {
-    setAllProducts(initialProducts);
-  }, [initialProducts]);
-
-
-  // --- Filtrado por búsqueda y por pestañas ---
-  useEffect(() => {
-    let products = allProducts;
-
-    // 1. Filtrar por pestaña activa
-    if (activeTab === 'cellphones') {
-      products = products.filter(isCellphone);
-    } else if (activeTab === 'accessories') {
-      products = products.filter(p => !isCellphone(p));
-    }
-
-    // 2. Filtrar por término de búsqueda
-    if (searchTerm) {
-      products = products.filter(p => 
-        p.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.brand.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setFilteredProducts(products);
-
-  }, [searchTerm, activeTab, allProducts]);
-
-
+export function InventoryTable({ products, onProductDeleted, isLoading, totalProducts }: InventoryTableProps) {
+  
   // --- Eliminación de un producto ---
   const handleDelete = async (id: string, model: string) => {
     if (!window.confirm(`¿Seguro que deseas eliminar "${model}"?`)) return;
 
     // Identificar si es celular o accesorio para la tabla correcta
-    const product = allProducts.find(p => p.id === id);
+    const product = products.find(p => p.id === id);
     const tabla = isCellphone(product!) ? 'celulares' : 'accesorios';
 
     try {
@@ -134,129 +102,115 @@ export function InventoryTable({ initialProducts, onProductDeleted }: InventoryT
   };
 
   return (
-       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex items-center justify-between gap-4">
-          <TabsList>
-            <TabsTrigger value="all">Todos</TabsTrigger>
-            <TabsTrigger value="cellphones">Celulares</TabsTrigger>
-            <TabsTrigger value="accessories">Accesorios</TabsTrigger>
-          </TabsList>
-          
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Buscar por modelo, marca..."
-              className="pl-8 w-full sm:w-[300px] md:w-[400px]"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+    <Card>
+      <CardContent className="pt-6">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="hidden w-[80px] sm:table-cell">Imagen</TableHead>
+              <TableHead>Producto</TableHead>
+              <TableHead>Stock</TableHead>
+              <TableHead className="hidden md:table-cell">Precio</TableHead>
+              <TableHead className="hidden md:table-cell">Tipo / Categoría</TableHead>
+              <TableHead><span className="sr-only">Acciones</span></TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center h-24">Cargando productos...</TableCell>
+              </TableRow>
+            ) : products.length === 0 ? (
+               <TableRow>
+                <TableCell colSpan={6} className="text-center h-24">No se encontraron productos.</TableCell>
+              </TableRow>
+            ) : (
+              products.map((product) => (
+                <TableRow key={product.id}>
+                  
+                  {/* Columna de Imagen */}
+                  <TableCell className="hidden sm:table-cell">
+                    <Image
+                      src={getDisplayImage(product.imageUrl)}
+                      alt={`Imagen de ${product.model}`}
+                      width={64}
+                      height={64}
+                      className="rounded-md object-cover aspect-square"
+                    />
+                  </TableCell>
+
+                  {/* Columna de Producto y Marca */}
+                  <TableCell className="font-medium">
+                    <div>{product.brand} {product.model}</div>
+                    <div className="text-sm text-muted-foreground">Color: {product.color}</div>
+                  </TableCell>
+                  
+                  {/* Columna de Stock */}
+                  <TableCell>
+                    <Badge variant={product.stock > 0 ? 'secondary' : 'destructive'}>
+                      {product.stock > 0 ? `${product.stock} unidades` : 'Agotado'}
+                    </Badge>
+                  </TableCell>
+
+                  {/* Columna de Precio */}
+                  <TableCell className="hidden md:table-cell">
+                    {product.discount > 0 ? (
+                      <div className="flex flex-col">
+                        <span className="text-red-500 font-bold">
+                          ${product.salePrice.toLocaleString('es-ES')}
+                        </span>
+                        <span className="text-xs text-muted-foreground line-through">
+                          ${product.originalPrice?.toLocaleString('es-ES')}
+                        </span>
+                      </div>
+                    ) : (
+                      `$${product.salePrice.toLocaleString('es-ES')}`
+                    )}
+                  </TableCell>
+
+                  {/* Columna de Tipo/Categoría */}
+                  <TableCell className="hidden md:table-cell">
+                    {isCellphone(product) ? (
+                      <Badge variant="outline">Celular</Badge>
+                    ) : (
+                      <Badge variant="default">{(product as Accessory).category}</Badge>
+                    )}
+                  </TableCell>
+
+                  {/* Columna de Acciones */}
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="icon" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                           <Link href={`/inventario/editar/${isCellphone(product) ? 'celular' : 'accesorio'}/${product.id}`}>Editar</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive cursor-pointer"
+                          onClick={() => handleDelete(product.id, product.model)}>
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+
+      <CardFooter>
+        <div className="text-xs text-muted-foreground">
+          Mostrando <strong>{products.length}</strong> de <strong>{totalProducts}</strong> productos.
         </div>
-
-        {/* Contenido de las pestañas */}
-        <TabsContent value={activeTab}>
-            <Card>
-              <CardContent className="pt-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="hidden w-[80px] sm:table-cell">Imagen</TableHead>
-                      <TableHead>Producto</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead className="hidden md:table-cell">Precio</TableHead>
-                      <TableHead className="hidden md:table-cell">Tipo / Categoría</TableHead>
-                      <TableHead><span className="sr-only">Acciones</span></TableHead>
-                    </TableRow>
-                  </TableHeader>
-
-                  <TableBody>
-                    {filteredProducts.map((product) => (
-                      <TableRow key={product.id}>
-                        
-                        {/* Columna de Imagen */}
-                        <TableCell className="hidden sm:table-cell">
-                          <Image
-                            src={getDisplayImage(product.imageUrl)}
-                            alt={`Imagen de ${product.model}`}
-                            width={64}
-                            height={64}
-                            className="rounded-md object-cover aspect-square"
-                          />
-                        </TableCell>
-
-                        {/* Columna de Producto y Marca */}
-                        <TableCell className="font-medium">
-                          <div>{product.brand} {product.model}</div>
-                          <div className="text-sm text-muted-foreground">Color: {product.color}</div>
-                        </TableCell>
-                        
-                        {/* Columna de Stock */}
-                        <TableCell>
-                          <Badge variant={product.stock > 0 ? 'secondary' : 'destructive'}>
-                            {product.stock > 0 ? `${product.stock} unidades` : 'Agotado'}
-                          </Badge>
-                        </TableCell>
-
-                        {/* Columna de Precio */}
-                        <TableCell className="hidden md:table-cell">
-                          {product.discount > 0 ? (
-                            <div className="flex flex-col">
-                              <span className="text-red-500 font-bold">
-                                ${product.salePrice.toLocaleString('es-ES')}
-                              </span>
-                              <span className="text-xs text-muted-foreground line-through">
-                                ${product.originalPrice?.toLocaleString('es-ES')}
-                              </span>
-                            </div>
-                          ) : (
-                            `$${product.salePrice.toLocaleString('es-ES')}`
-                          )}
-                        </TableCell>
-
-                        {/* Columna de Tipo/Categoría */}
-                        <TableCell className="hidden md:table-cell">
-                          {isCellphone(product) ? (
-                            <Badge variant="outline">Celular</Badge>
-                          ) : (
-                            <Badge variant="default">{(product as Accessory).category}</Badge>
-                          )}
-                        </TableCell>
-
-                        {/* Columna de Acciones */}
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button size="icon" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                              <DropdownMenuItem asChild>
-                                 <Link href={`/inventario/editar/${isCellphone(product) ? 'celular' : 'accesorio'}/${product.id}`}>Editar</Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-destructive cursor-pointer"
-                                onClick={() => handleDelete(product.id, product.model)}>
-                                Eliminar
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-
-              <CardFooter>
-                <div className="text-xs text-muted-foreground">
-                  Mostrando <strong>{filteredProducts.length}</strong> de <strong>{allProducts.length}</strong> productos.
-                </div>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-      </Tabs>
+      </CardFooter>
+    </Card>
   );
 }

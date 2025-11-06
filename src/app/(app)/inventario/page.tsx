@@ -1,30 +1,57 @@
 'use client';
 
 import Link from 'next/link';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Search } from 'lucide-react';
 import { getAllProductsCached } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { InventoryTable } from '@/components/inventory-table';
-import { useEffect, useState } from 'react';
-import type { Product } from '@/lib/types';
+import { useEffect, useState, useMemo } from 'react';
+import type { Product, Cellphone } from '@/lib/types';
 import { ExportExcelButton } from '@/components/forms/exel/exel-button';
 import { ExcelUpload } from '@/components/forms/exel/ExcelUpload';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+
+function isCellphone(product: Product): product is Cellphone {
+  return 'imei' in product;
+}
 
 export default function InventoryPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (forceRefresh = false) => {
     setLoading(true);
-    const initialProducts = await getAllProductsCached(true); // Forzar refresh
-    setProducts(initialProducts);
+    const initialProducts = await getAllProductsCached(forceRefresh);
+    setAllProducts(initialProducts);
     setLoading(false);
   };
 
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  const filteredProducts = useMemo(() => {
+    let products = allProducts;
+
+    if (activeTab === 'cellphones') {
+      products = products.filter(isCellphone);
+    } else if (activeTab === 'accessories') {
+      products = products.filter(p => !isCellphone(p));
+    }
+
+    if (searchTerm) {
+      products = products.filter(p => 
+        p.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.brand.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    return products;
+  }, [searchTerm, activeTab, allProducts]);
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -37,10 +64,10 @@ export default function InventoryPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ExcelUpload onUploadSuccess={fetchProducts} />
+          <ExcelUpload onUploadSuccess={() => fetchProducts(true)} />
           <ExportExcelButton 
-            data={products}
-            fileName="inventario"
+            data={filteredProducts}
+            fileName={`inventario_${activeTab}`}
             sheetName="Productos"
           />
           <Link href="/inventario/nuevo">
@@ -52,11 +79,51 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {loading ? (
-        <p>Cargando inventario...</p>
-      ) : (
-        <InventoryTable initialProducts={products} onProductDeleted={fetchProducts} />
-      )}
+       <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex items-center justify-between gap-4">
+          <TabsList>
+            <TabsTrigger value="all">Todos</TabsTrigger>
+            <TabsTrigger value="cellphones">Celulares</TabsTrigger>
+            <TabsTrigger value="accessories">Accesorios</TabsTrigger>
+          </TabsList>
+          
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Buscar por modelo, marca..."
+              className="pl-8 w-full sm:w-[300px] md:w-[400px]"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <TabsContent value="all">
+            <InventoryTable 
+              products={filteredProducts} 
+              onProductDeleted={() => fetchProducts(true)} 
+              isLoading={loading}
+              totalProducts={allProducts.length}
+            />
+        </TabsContent>
+        <TabsContent value="cellphones">
+            <InventoryTable 
+              products={filteredProducts} 
+              onProductDeleted={() => fetchProducts(true)} 
+              isLoading={loading}
+              totalProducts={allProducts.length}
+            />
+        </TabsContent>
+        <TabsContent value="accessories">
+            <InventoryTable 
+              products={filteredProducts} 
+              onProductDeleted={() => fetchProducts(true)} 
+              isLoading={loading}
+              totalProducts={allProducts.length}
+            />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

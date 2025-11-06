@@ -54,35 +54,39 @@ export function ExcelUpload({ onUploadSuccess }: ExcelUploadProps) {
     }
 
     setIsUploading(true);
-    try {
-      const result = await subirDatos(file, productType);
-      
-      toast({
-        title: result.success ? 'Carga Finalizada' : 'Error en la Carga',
-        description: result.message,
-        variant: result.success ? 'default' : 'destructive',
-        duration: 10000,
-      });
-
-      if (result.success) {
+    
+    subirDatos(file, productType)
+      .then(result => {
+        let description = result.message;
         if (result.results && result.results.errorCount > 0) {
-            // Podrías mostrar los errores específicos en otro modal o log
-            console.error("Errores detallados:", result.results.errors);
+          const errorDetails = result.results.errors.slice(0, 5).join('\n'); // Muestra hasta 5 errores
+          description += `\nErrores:\n${errorDetails}`;
         }
-        onUploadSuccess(); // Refrescar la tabla de inventario
-        setIsOpen(false); // Cerrar el modal
-        setFile(null); // Limpiar el archivo
-        setProductType(''); // Limpiar el tipo de producto
-      }
-    } catch (err: any) {
-      toast({
-        title: 'Error Inesperado',
-        description: err.message || 'Ocurrió un problema al subir el archivo.',
-        variant: 'destructive',
+        
+        toast({
+          title: result.success ? 'Carga Finalizada' : 'Error en la Carga',
+          description: <pre className="whitespace-pre-wrap">{description}</pre>,
+          variant: result.success && result.results.errorCount === 0 ? 'default' : 'destructive',
+          duration: 15000,
+        });
+
+        if (result.success) {
+          onUploadSuccess();
+          setIsOpen(false);
+          setFile(null);
+          setProductType('');
+        }
+      })
+      .catch(err => {
+         toast({
+          title: 'Error Inesperado',
+          description: err.message || 'Ocurrió un problema al subir el archivo.',
+          variant: 'destructive',
+        });
+      })
+      .finally(() => {
+        setIsUploading(false);
       });
-    } finally {
-      setIsUploading(false);
-    }
   };
 
   return (

@@ -24,6 +24,7 @@ import { methodPut } from '@/lib/functions/metodos/methodPut';
 import { methodGetById } from '@/lib/functions/metodos/methodGetById';
 import { methodPost } from '@/lib/functions/metodos/methodPost';
 import type { Product } from '@/lib/types';
+import { getMarcas } from '@/lib/data'; // Importar getMarcas
 
 
 // --- Importamos los componentes del formulario ---
@@ -79,6 +80,8 @@ export default function ProductFormPage() {
   const [productId, setProductId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [marcas, setMarcas] = useState<{ id: string; nombre: string }[]>([]); // Estado para marcas
+
 
   // Un estado para los archivos nuevos y otro para los existentes
   const [newFiles, setNewFiles] = useState<File[]>([]);
@@ -113,52 +116,64 @@ export default function ProductFormPage() {
   });
 
   useEffect(() => {
-    if (isEditMode && productType && productId) {
-      const fetchProductData = async () => {
-        setIsLoading(true);
-        const tableName = productType === 'celular' ? 'celulares' : 'accesorios';
-        const result = await methodGetById(tableName, productId);
-        
-        if (result.success && result.data) {
-          const productData = {
-            ...result.data,
-            brand: result.data.nombre_marca, // Mapear nombre_marca a brand
-          };
+    async function fetchInitialData() {
+      setIsLoading(true);
+      try {
+        const marcasData = await getMarcas();
+        setMarcas(marcasData);
 
-          if (productData.dataTecnica && typeof productData.dataTecnica === 'object') {
-            productData.dataTecnica = Object.entries(productData.dataTecnica).map(([key, value]) => ({ key, value }));
-          } else {
-            productData.dataTecnica = [];
-          }
+        if (isEditMode && productType && productId) {
+          const tableName = productType === 'celular' ? 'celulares' : 'accesorios';
+          const result = await methodGetById(tableName, productId);
+          
+          if (result.success && result.data) {
+            const productData = { ...result.data };
 
-          form.reset(productData);
-
-          // Guardar las URLs de las imágenes existentes
-          if (productData.imageUrl && Array.isArray(productData.imageUrl)) {
-            setExistingImageUrls(productData.imageUrl);
-          } else if (productData.imageUrl && typeof productData.imageUrl === 'string') {
-             try {
-                const parsed = JSON.parse(productData.imageUrl);
-                setExistingImageUrls(Array.isArray(parsed) ? parsed : [productData.imageUrl]);
-            } catch {
-                setExistingImageUrls([productData.imageUrl]);
+            // Mapear id_brand a nombre de marca
+            const brandName = marcasData.find(m => m.id === productData.id_brand)?.nombre || '';
+            productData.brand = brandName;
+            
+            if (productData.dataTecnica && typeof productData.dataTecnica === 'object') {
+              productData.dataTecnica = Object.entries(productData.dataTecnica).map(([key, value]) => ({ key, value }));
+            } else {
+              productData.dataTecnica = [];
             }
-          }
 
-        } else {
-          toast({
-            title: 'Error',
-            description: `No se pudo encontrar el producto. ${result.message}`,
-            variant: 'destructive',
-          });
-          router.push('/inventario');
+            form.reset(productData);
+
+            if (productData.imageUrl && Array.isArray(productData.imageUrl)) {
+              setExistingImageUrls(productData.imageUrl);
+            } else if (productData.imageUrl && typeof productData.imageUrl === 'string') {
+               try {
+                  const parsed = JSON.parse(productData.imageUrl);
+                  setExistingImageUrls(Array.isArray(parsed) ? parsed : [productData.imageUrl]);
+              } catch {
+                  setExistingImageUrls([productData.imageUrl]);
+              }
+            }
+          } else {
+            toast({
+              title: 'Error',
+              description: `No se pudo encontrar el producto. ${result.message}`,
+              variant: 'destructive',
+            });
+            router.push('/inventario');
+          }
+        } else if (!isEditMode) {
+            form.reset();
         }
+      } catch (error) {
+        toast({
+          title: 'Error de Carga',
+          description: 'No se pudieron cargar las marcas o los datos del producto.',
+          variant: 'destructive',
+        });
+      } finally {
         setIsLoading(false);
-      };
-      fetchProductData();
-    } else if (!isEditMode && productType) {
-        form.reset();
+      }
     }
+    
+    fetchInitialData();
   }, [isEditMode, productType, productId, form, router, toast]);
 
   const handleFiles = (filesToAdd: FileList | null) => {
@@ -265,7 +280,7 @@ export default function ProductFormPage() {
 
             <CardContent>
               <div className="grid gap-6">
-                <ProductDetailsFields control={form.control} productType={productType} />
+                <ProductDetailsFields control={form.control} productType={productType} marcas={marcas} />
                 <Separator />
                 <ProductPricingFields control={form.control} />
                  <Separator />
@@ -305,5 +320,3 @@ export default function ProductFormPage() {
     </Form>
   );
 }
-
-    

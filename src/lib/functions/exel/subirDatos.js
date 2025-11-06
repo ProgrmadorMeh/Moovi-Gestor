@@ -1,12 +1,45 @@
-
 import * as XLSX from 'xlsx';
 import { supabase } from '../../supabaseClient.js';
 import { methodPost } from '../metodos/methodPost.js';
+import { getMarcas } from '../../data.js';
+
+// Función para calcular la distancia de Levenshtein
+function levenshteinDistance(a, b) {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+
+  const matrix = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1,     // insertion
+          matrix[i - 1][j] + 1      // deletion
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+}
+
 
 export async function subirDatos(file, productType) {
-  if (!file) return { success: false, message: 'No se proporcionó ningún archivo.' };
+  if (!file) return Promise.reject({ message: 'No se proporcionó ningún archivo.' });
   if (productType !== 'celular' && productType !== 'accesorio')
-    return { success: false, message: 'Tipo de producto no válido.' };
+    return Promise.reject({ message: 'Tipo de producto no válido.' });
 
   const reader = new FileReader();
 
@@ -22,20 +55,11 @@ export async function subirDatos(file, productType) {
         if (json.length === 0)
           return resolve({ success: false, message: 'El archivo Excel está vacío.' });
 
-        // 🔹 Obtener todas las marcas disponibles desde Supabase
-        const { data: marcas, error: marcasError } = await supabase
-          .from('marcas')
-          .select('id, nombre');
-
-        if (marcasError) {
-          console.error(marcasError);
-          return reject({
-            success: false,
-            message: 'Error al obtener las marcas desde la base de datos.',
-          });
+        const marcas = await getMarcas(true); // Forzar refresh para tener las últimas marcas
+        if (!marcas || marcas.length === 0) {
+            return reject({ message: 'No se pudieron obtener las marcas de la base de datos.' });
         }
-
-        // Crear mapa para búsquedas rápidas de marca -> id
+        
         const marcaMap = new Map(marcas.map((m) => [m.nombre.toLowerCase(), m.id]));
 
         let successCount = 0;
@@ -43,60 +67,66 @@ export async function subirDatos(file, productType) {
         const errors = [];
         const tableName = productType === 'celular' ? 'celulares' : 'accesorios';
 
-        await Promise.all(
-          json.map(async (row, index) => {
-            try {
-              // 🔍 Buscar id de la marca según el nombre
-              const brandName = (row.brand || '').toLowerCase().trim();
-              const id_brand = marcaMap.get(brandName);
+        for (const [index, row] of json.entries()) {
+           try {
+              const brandNameFromExcel = (row.brand || '').toLowerCase().trim();
+              let id_brand;
+              let bestMatch = null;
+              let minDistance = 4; // Umbral de 3 caracteres
 
-              if (!id_brand) {
-                errorCount++;
-                errors.push(
-                  `Fila ${index + 2}: Marca "${row.brand}" no encontrada en la base de datos.`
-                );
-                return;
+              for (const [dbBrandName, dbBrandId] of marcaMap.entries()) {
+                  const distance = levenshteinDistance(brandNameFromExcel, dbBrandName);
+                  if (distance < minDistance) {
+                      minDistance = distance;
+                      bestMatch = dbBrandName;
+                      id_brand = dbBrandId;
+                  }
               }
               
-              const productData = {
-                id_brand: id_brand,
+              const brandToUse = bestMatch ? marcas.find(m => m.id === id_brand)?.nombre : row.brand;
+
+
+              const baseProductData = {
+                brand: brandToUse || row.brand || '',
                 model: row.model || '',
                 color: row.color || '',
                 salePrice: Number(row.salePrice) || 0,
                 costPrice: Number(row.costPrice) || 0,
                 stock: Number(row.stock) || 0,
-                initialStock: Number(row.initialStock) || 0,
                 description: row.description || '',
-                imei: productType === 'celular' ? row.imei || null : undefined,
-                shipping: row.shipping === 'TRUE' || row.shipping === true,
-                discount: row.discount || null,
-                installments: row.installments || null,
-                installmentPrice: row.installmentPrice || null,
+                shipping: String(row.shipping).toUpperCase() === 'TRUE',
+                discount: row.discount ? Number(row.discount) : null,
+                installments: row.installments ? Number(row.installments) : null,
+                installmentPrice: row.installmentPrice ? Number(row.installmentPrice) : null,
                 imageUrl: row.imageUrl ? JSON.parse(row.imageUrl) : [],
               };
-               
-              // El 'brand' ahora se maneja en el methodPost a través del id_brand
-              productData.brand = row.brand;
+              
+              let productData;
 
-              // 🔧 Agregar dataTecnica si es celular
               if (productType === 'celular') {
-                const dataTecnica = {};
-                const techKeys = ["Pantalla", "Procesador", "RAM", "Almacenamiento", "Cámara Principal", "Batería", "Sistema Operativo", "Capacidad", "Dimensiones", "Peso", "Conectividad"];
-                techKeys.forEach(key => {
-                    // Maneja el caso de "Cámara Principal" que puede tener un espacio
-                    if(row[key]) dataTecnica[key] = row[key];
-                })
-                productData.dataTecnica = dataTecnica;
-              } else {
-                 productData.category = row.category || 'Otro';
+                  const dataTecnica = {};
+                  const techKeys = ["Pantalla", "Procesador", "RAM", "Almacenamiento", "Cámara Principal", "Cámara Frontal", "Batería", "Sistema Operativo", "Dimensiones", "Peso", "Conectividad", "Capacidad"];
+                   techKeys.forEach(key => {
+                      if(row[key]) dataTecnica[key] = row[key];
+                  });
+
+                  productData = {
+                      ...baseProductData,
+                      imei: row.imei || null,
+                      dataTecnica,
+                  };
+              } else { // accesorio
+                  productData = {
+                      ...baseProductData,
+                      category: row.category || 'Otro',
+                  };
               }
 
-
-              // 🔼 Subir a la tabla correspondiente
               const result = await methodPost(productData, tableName);
 
-              if (result.success) successCount++;
-              else {
+              if (result.success) {
+                successCount++;
+              } else {
                 errorCount++;
                 errors.push(`Fila ${index + 2}: ${result.message}`);
               }
@@ -104,8 +134,7 @@ export async function subirDatos(file, productType) {
               errorCount++;
               errors.push(`Fila ${index + 2}: Error inesperado - ${err.message}`);
             }
-          })
-        );
+        }
 
         const summaryMessage = `Carga completada. ${successCount} productos guardados, ${errorCount} errores.`;
         resolve({
@@ -115,14 +144,13 @@ export async function subirDatos(file, productType) {
         });
       } catch (err) {
         reject({
-          success: false,
           message: `Error al procesar el archivo: ${err.message}`,
         });
       }
     };
 
     reader.onerror = () =>
-      reject({ success: false, message: 'Error al leer el archivo.' });
+      reject({ message: 'Error al leer el archivo.' });
 
     reader.readAsArrayBuffer(file);
   });

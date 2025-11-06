@@ -1,12 +1,15 @@
-
 import { methodGetList } from "@/lib/functions/metodos/methodGetList";
 import type { Cellphone, Accessory, Product, Order, OrderItem, User } from "@/lib/types";
+import { supabase } from './supabaseClient';
+import { cache } from 'react';
 
 // ----------------- CACHE -----------------
 
 let cachedAllProducts: Product[] | null = null;
 let cachedOrders: Order[] | null = null;
 let cachedUsers: User[] | null = null;
+let cachedMarcas: { id: string; nombre: string }[] | null = null;
+
 
 /**
  * Procesa una lista de productos para asegurar que la lógica de precios y marcas sea consistente.
@@ -153,3 +156,21 @@ export async function getUsers(refresh = false): Promise<User[]> {
   cachedUsers = data as User[];
   return cachedUsers;
 }
+
+export const getMarcas = cache(async (refresh = false): Promise<{ id: string; nombre: string }[]> => {
+  if (!refresh && cachedMarcas) {
+    return cachedMarcas;
+  }
+
+  const { data, error } = await supabase
+    .from('marcas')
+    .select('id, nombre');
+  
+  if (error) {
+    console.error("Error fetching marcas:", error);
+    return [];
+  }
+
+  cachedMarcas = data;
+  return data;
+});

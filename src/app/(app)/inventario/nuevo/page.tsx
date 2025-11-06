@@ -21,6 +21,7 @@ import { Form } from '@/components/ui/form';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { methodPost } from '@/lib/functions/metodos/methodPost';
+import { getMarcas } from '@/lib/data'; // Importar getMarcas
 
 // --- Importamos los nuevos componentes del formulario ---
 import { ProductDetailsFields } from '@/components/forms/product/ProductDetailsFields';
@@ -95,6 +96,9 @@ export default function NewProductPage() {
   const { toast } = useToast();
   const [productType, setProductType] = useState('celular');
   const [files, setFiles] = useState<File[]>([]);
+  const [marcas, setMarcas] = useState<{ id: string; nombre: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
 
   const form = useForm<CellphoneFormValues | AccessoryFormValues>({
     resolver: (data, context, options) => {
@@ -103,6 +107,26 @@ export default function NewProductPage() {
     },
     defaultValues: defaultCellphoneValues,
   });
+  
+  useEffect(() => {
+    async function fetchInitialData() {
+      setIsLoading(true);
+      try {
+        const marcasData = await getMarcas();
+        setMarcas(marcasData);
+      } catch (error) {
+        toast({
+          title: 'Error de Carga',
+          description: 'No se pudieron cargar las marcas.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchInitialData();
+  }, [toast]);
+
 
   useEffect(() => {
     form.reset(productType === 'celular' ? defaultCellphoneValues : defaultAccessoryValues);
@@ -177,8 +201,11 @@ export default function NewProductPage() {
             </CardHeader>
 
             <CardContent>
+             {isLoading ? (
+                <div>Cargando...</div>
+              ) : (
               <div className="grid gap-6">
-                <ProductDetailsFields control={form.control} productType={productType} />
+                <ProductDetailsFields control={form.control} productType={productType} marcas={marcas} />
                 <Separator />
                 <ProductPricingFields control={form.control} />
                  <Separator />
@@ -202,6 +229,7 @@ export default function NewProductPage() {
                   <ProductdataTecnicaField control={form.control} />
                 )}
               </div>
+              )}
             </CardContent>
 
             <CardFooter className="flex justify-end gap-2">
@@ -218,5 +246,3 @@ export default function NewProductPage() {
     </Form>
   );
 }
-
-    

@@ -20,9 +20,10 @@ import { Input } from "@/components/ui/input";
 interface ProductDetailsFieldsProps {
   control: Control<any>;
   productType: 'celular' | 'accesorio';
+  marcas: { id: string; nombre: string }[];
 }
 
-export function ProductDetailsFields({ control, productType }: ProductDetailsFieldsProps) {
+export function ProductDetailsFields({ control, productType, marcas }: ProductDetailsFieldsProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       {/* Categoria (Solo para Accesorios) */}
@@ -62,14 +63,12 @@ export function ProductDetailsFields({ control, productType }: ProductDetailsFie
                 <SelectTrigger><SelectValue placeholder="Selecciona una marca" /></SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="Apple">Apple</SelectItem>
-                <SelectItem value="Samsung">Samsung</SelectItem>
-                <SelectItem value="Xiaomi">Xiaomi</SelectItem>
-                <SelectItem value="Motorola">Motorola</SelectItem>
-                <SelectItem value="Google">Google</SelectItem>
-                <SelectItem value="JBL">JBL</SelectItem>
-                <SelectItem value="Anker">Anker</SelectItem>
-                <SelectItem value="Otro">Otra</SelectItem>
+                {marcas.map(marca => (
+                  <SelectItem key={marca.id} value={marca.nombre}>
+                    {marca.nombre}
+                  </SelectItem>
+                ))}
+                <SelectItem value="Otra">Otra (Crear nueva)</SelectItem>
               </SelectContent>
             </Select>
             <FormMessage />
