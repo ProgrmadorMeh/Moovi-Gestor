@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { supabase } from '../../supabaseClient.js';
 import { methodPost } from '../metodos/methodPost.js';
-import { getMarcas } from '../../data.js';
+import { getMarcas } from '../../data';
 
 // Función para calcular la distancia de Levenshtein
 function levenshteinDistance(a, b) {
