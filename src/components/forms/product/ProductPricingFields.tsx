@@ -16,7 +16,27 @@ interface ProductPricingFieldsProps {
 
 export function ProductPricingFields({ control }: ProductPricingFieldsProps) {
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+       <FormField
+        control={control}
+        name="costPrice"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Precio de Costo ($)</FormLabel>
+            <FormControl>
+              <Input 
+                type="number" 
+                step="0.01" 
+                placeholder="Ej: 900.00"
+                {...field} 
+                onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                value={field.value ?? ''} 
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
       <FormField
         control={control}
         name="salePrice"
@@ -36,7 +56,26 @@ export function ProductPricingFields({ control }: ProductPricingFieldsProps) {
           </FormItem>
         )}
       />
-      <FormField
+       <FormField
+        control={control}
+        name="discount"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Descuento (%)</FormLabel>
+            <FormControl>
+              <Input 
+                type="number"
+                placeholder="Ej: 10"
+                {...field} 
+                onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)}
+                value={field.value ?? ''} 
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+       <FormField
         control={control}
         name="stock"
         render={({ field }) => (

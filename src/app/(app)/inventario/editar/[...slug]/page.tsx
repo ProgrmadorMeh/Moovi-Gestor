@@ -31,17 +31,29 @@ import { ProductPricingFields } from '@/components/forms/product/ProductPricingF
 import { ProductIdentificationFields } from '@/components/forms/product/ProductIdentificationFields';
 import { ProductDescriptionField } from '@/components/forms/product/ProductDescriptionField';
 import { ProductdataTecnicaField } from '@/components/forms/product/ProductSpecificationsField';
+import { ProductShippingFields } from '@/components/forms/product/ProductShippingFields';
+import { ProductFinancingFields } from '@/components/forms/product/ProductFinancingFields';
+import { Separator } from '@/components/ui/separator';
 
 // --- Esquemas ---
-const cellphoneSchema = z.object({
+const baseSchema = {
   brand: z.string({ required_error: 'La marca es obligatoria.' }).min(1, 'La marca es obligatoria.'),
   model: z.string().min(1, 'El modelo es obligatorio.'),
   color: z.string().min(1, 'El color es obligatorio.'),
   salePrice: z.coerce.number().positive('El precio de venta debe ser positivo.'),
   stock: z.coerce.number().int().min(0, 'El stock no puede ser negativo.'),
   description: z.string().optional(),
-  imei: z.string().optional(),
   imageUrl: z.any().optional(),
+  costPrice: z.coerce.number().optional(),
+  discount: z.coerce.number().optional(),
+  shipping: z.boolean().optional(),
+  installments: z.coerce.number().optional(),
+  installmentPrice: z.coerce.number().optional(),
+};
+
+const cellphoneSchema = z.object({
+  ...baseSchema,
+  imei: z.string().optional(),
   dataTecnica: z.array(z.object({
     key: z.string().min(1, 'La característica no puede estar vacía.'),
     value: z.string().min(1, 'El valor no puede estar vacío.'),
@@ -49,15 +61,10 @@ const cellphoneSchema = z.object({
 });
 
 const accessorySchema = z.object({
+  ...baseSchema,
   category: z.string({ required_error: 'La categoría es obligatoria.' }).min(1, 'La categoría es obligatoria.'),
-  brand: z.string({ required_error: 'La marca es obligatoria.' }).min(1, 'La marca es obligatoria.'),
-  model: z.string().min(1, 'El modelo es obligatorio.'),
-  color: z.string().min(1, 'El color es obligatorio.'),
-  salePrice: z.coerce.number().positive('El precio de venta debe ser positivo.'),
-  stock: z.coerce.number().int().min(0, 'El stock no puede ser negativo.'),
-  description: z.string().optional(),
-  imageUrl: z.any().optional(),
 });
+
 
 type FormValues = z.infer<typeof cellphoneSchema> | z.infer<typeof accessorySchema>;
 
@@ -100,7 +107,7 @@ export default function ProductFormPage() {
     // Valores por defecto para evitar errores de uncontrolled/controlled
     defaultValues: {
         brand: '', model: '', color: '', salePrice: 0, stock: 0, description: '', imei: '',
-        category: '', dataTecnica: []
+        category: '', dataTecnica: [], costPrice: 0, discount: 0, shipping: false, installments: 0, installmentPrice: 0
     }
   });
 
@@ -258,16 +265,24 @@ export default function ProductFormPage() {
             <CardContent>
               <div className="grid gap-6">
                 <ProductDetailsFields control={form.control} productType={productType} />
+                <Separator />
                 <ProductPricingFields control={form.control} />
-                <ProductIdentificationFields 
-                  control={form.control} 
-                  productType={productType} 
-                  newFiles={newFiles}
-                  existingImageUrls={existingImageUrls}
-                  handleFiles={handleFiles} 
-                  removeNewFile={removeNewFile}
-                  removeExistingFile={removeExistingFile}
-                />
+                 <Separator />
+                <ProductFinancingFields control={form.control} />
+                 <Separator />
+                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <ProductIdentificationFields 
+                      control={form.control} 
+                      productType={productType} 
+                      newFiles={newFiles}
+                      existingImageUrls={existingImageUrls}
+                      handleFiles={handleFiles} 
+                      removeNewFile={removeNewFile}
+                      removeExistingFile={removeExistingFile}
+                    />
+                    <ProductShippingFields control={form.control} />
+                </div>
+                <Separator />
                 <ProductDescriptionField control={form.control} />
                 {productType === 'celular' && (
                   <ProductdataTecnicaField control={form.control} />

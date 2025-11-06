@@ -5,15 +5,18 @@ type BaseProduct = {
   id: string;
   model: string;
   description: string;
+  costPrice?: number;
   salePrice: number;
   originalPrice?: number; // Es opcional, solo existe si hay descuento.
-  discount: number;
+  discount?: number;
   stock: number;
   brand: string;
-  imageUrl: string | string[] | null; // <-- Acepta una URL, un array de URLs o null
+  imageUrl: string | string[] | null;
   shipping: boolean;
-  installments: number;
+  installments?: number;
+  installmentPrice?: number;
   color: string;
+  dataTecnica?: any;
 };
 
 // Tipo específico para celulares, extiende la base y añade sus propios campos.

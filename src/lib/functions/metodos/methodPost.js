@@ -3,10 +3,15 @@ import { supabase } from '../../supabaseClient.js';
 export async function methodPost(datos, tabla) {
   // Para la tabla 'user', los campos obligatorios son diferentes
   if (tabla !== 'user') {
-    for (const [key, value] of Object.entries(datos)) {
-      if (!value && key !== 'description' && key !== 'imei' && key !== 'imageUrl' && key !== 'files') {
-        return { success: false, message: `El campo "${key}" es obligatorio`, data: null };
-      }
+    const requiredFields = ['brand', 'model', 'color', 'salePrice', 'stock'];
+     if (tabla === 'accesorios') {
+      requiredFields.push('category');
+    }
+
+    for (const field of requiredFields) {
+        if (!datos[field]) {
+             return { success: false, message: `El campo "${field}" es obligatorio`, data: null };
+        }
     }
   }
 
