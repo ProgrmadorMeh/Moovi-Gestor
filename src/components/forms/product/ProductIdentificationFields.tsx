@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Control } from 'react-hook-form';
@@ -32,7 +33,7 @@ export function ProductIdentificationFields({
   const totalImages = newFiles.length + existingImageUrls.length;
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6">
       {productType === 'celular' && (
         <FormField
           control={control}
@@ -47,7 +48,7 @@ export function ProductIdentificationFields({
         />
       )}
       
-      <div className={productType === 'celular' ? '' : 'md:col-span-2'}>
+      <div>
         <FormLabel>Imágenes (máx. 4)</FormLabel>
         <div
           onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
@@ -94,3 +95,5 @@ export function ProductIdentificationFields({
     </div>
   );
 }
+
+    
