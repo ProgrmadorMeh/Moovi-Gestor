@@ -22,6 +22,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import type { User as AppUser } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
+import { ThemeToggle } from './theme-toggle';
 
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -47,6 +48,7 @@ export function AppHeader() {
 
   useEffect(() => {
     const getUserData = async () => {
+      setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
@@ -154,8 +156,11 @@ export function AppHeader() {
       <div className="flex-1">
         <h1 className="font-semibold text-lg hidden sm:block">{title}</h1>
       </div>
-
-      {renderUserAuth()}
+      
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
+        {renderUserAuth()}
+      </div>
     </header>
   );
 }
