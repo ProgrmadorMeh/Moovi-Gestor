@@ -18,7 +18,7 @@ import type { ChartConfig } from '@/components/ui/chart';
 const chartConfig = {
   sales: {
     label: 'Ventas',
-    color: 'hsl(var(--primary))',
+    color: 'hsl(221.2 83.2% 53.3%)', // A consistent blue color
   },
 } satisfies ChartConfig;
 
