@@ -43,6 +43,7 @@ export async function methodPut(tabla, datos){
 
       campos.id_brand = marcaId;
       delete campos.brand;
+      delete campos.campos.file
     }
 
     const { data, error } = await supabase
