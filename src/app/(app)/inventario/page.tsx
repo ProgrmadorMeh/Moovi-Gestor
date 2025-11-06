@@ -5,7 +5,8 @@ import { PlusCircle, Search } from 'lucide-react';
 import { getAllProductsCached } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { InventoryTable } from '@/components/inventory-table';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Product, Cellphone } from '@/lib/types';
 import { ExportExcelButton } from '@/components/forms/exel/exel-button';
 import { ExcelUpload } from '@/components/forms/exel/ExcelUpload';
@@ -22,17 +23,36 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
-  const fetchProducts = async (forceRefresh = false) => {
+  const fetchProducts = async () => {
     setLoading(true);
-    const initialProducts = await getAllProductsCached(forceRefresh);
-    setAllProducts(initialProducts);
-    setLoading(false);
+    try {
+      const initialProducts = await getAllProductsCached();
+      setAllProducts(initialProducts);
+    } catch (error) {
+      console.error("Failed to fetch products:", error);
+      // Optionally, show a toast or error message to the user
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  const handleActionSuccess = () => {
+    startTransition(() => {
+      // This will re-run the server-side fetching and update the page.
+      // Next.js will cleverly re-use the layout.
+      router.refresh(); 
+      // After refresh, we can optionally re-fetch client-side data if needed,
+      // but router.refresh should handle most cases with Server Components.
+      fetchProducts();
+    });
+  };
 
   const filteredProducts = useMemo(() => {
     let products = allProducts;
@@ -64,7 +84,7 @@ export default function InventoryPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ExcelUpload onUploadSuccess={() => fetchProducts(true)} />
+          <ExcelUpload onUploadSuccess={handleActionSuccess} />
           <ExportExcelButton 
             data={filteredProducts}
             fileName={`inventario_${activeTab}`}
@@ -102,24 +122,24 @@ export default function InventoryPage() {
         <TabsContent value="all">
             <InventoryTable 
               products={filteredProducts} 
-              onProductDeleted={() => fetchProducts(true)} 
-              isLoading={loading}
+              onProductDeleted={handleActionSuccess} 
+              isLoading={loading || isPending}
               totalProducts={allProducts.length}
             />
         </TabsContent>
         <TabsContent value="cellphones">
             <InventoryTable 
               products={filteredProducts} 
-              onProductDeleted={() => fetchProducts(true)} 
-              isLoading={loading}
+              onProductDeleted={handleActionSuccess} 
+              isLoading={loading || isPending}
               totalProducts={allProducts.length}
             />
         </TabsContent>
         <TabsContent value="accessories">
             <InventoryTable 
               products={filteredProducts} 
-              onProductDeleted={() => fetchProducts(true)} 
-              isLoading={loading}
+              onProductDeleted={handleActionSuccess} 
+              isLoading={loading || isPending}
               totalProducts={allProducts.length}
             />
         </TabsContent>

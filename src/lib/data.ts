@@ -3,9 +3,8 @@ import type { Cellphone, Accessory, Product, Order, OrderItem, User } from "@/li
 import { supabase } from './supabaseClient';
 import { cache } from 'react';
 
-// ----------------- CACHE -----------------
-
-let cachedAllProducts: Product[] | null = null;
+// --- CACHE (Module-level cache removed for more reliable Next.js caching) ---
+// let cachedAllProducts: Product[] | null = null; // REMOVED
 let cachedOrders: Order[] | null = null;
 let cachedUsers: User[] | null = null;
 let cachedMarcas: { id: string; nombre: string }[] | null = null;
@@ -43,13 +42,9 @@ function processProducts(products: any[]): Product[] {
 /**
  * Obtiene todos los productos combinados (celulares + accesorios) con cache
  * y aplica la lógica de precios y marcas correcta.
- * @param refresh - Si es true, fuerza recargar desde Supabase
+ * Usamos la función `cache` de React para un cacheo de request más fiable.
  */
-export async function getAllProductsCached(refresh = false): Promise<Product[]> {
-  if (!refresh && cachedAllProducts) {
-    return cachedAllProducts;
-  }
-
+export const getAllProductsCached = cache(async (): Promise<Product[]> => {
   const results = await Promise.all([
     methodGetList("celulares"),
     methodGetList("accesorios"),
@@ -63,16 +58,17 @@ export async function getAllProductsCached(refresh = false): Promise<Product[]> 
     ...(Array.isArray(accessoriesRes.data) ? accessoriesRes.data : []) as any[],
   ];
 
-  cachedAllProducts = processProducts(allProductsRaw);
+  const processed = processProducts(allProductsRaw);
   
-  return cachedAllProducts;
-}
+  return processed;
+});
+
 
 /**
  * Obtiene solo celulares, ya procesados.
  */
 export async function getCellphonesCached(refresh = false): Promise<Cellphone[]> {
-  const allProducts = await getAllProductsCached(refresh);
+  const allProducts = await getAllProductsCached();
   return allProducts.filter((p): p is Cellphone => "imei" in p);
 }
 
@@ -80,7 +76,7 @@ export async function getCellphonesCached(refresh = false): Promise<Cellphone[]>
  * Obtiene solo accesorios, ya procesados.
  */
 export async function getAccessoriesCached(refresh = false): Promise<Accessory[]> {
-  const allProducts = await getAllProductsCached(refresh);
+  const allProducts = await getAllProductsCached();
   return allProducts.filter((p): p is Accessory => "category" in p);
 }
 
@@ -157,11 +153,7 @@ export async function getUsers(refresh = false): Promise<User[]> {
   return cachedUsers;
 }
 
-export const getMarcas = cache(async (refresh = false): Promise<{ id: string; nombre: string }[]> => {
-  if (!refresh && cachedMarcas) {
-    return cachedMarcas;
-  }
-
+export const getMarcas = cache(async (): Promise<{ id: string; nombre: string }[]> => {
   const { data, error } = await supabase
     .from('marcas')
     .select('id, nombre');
@@ -171,6 +163,5 @@ export const getMarcas = cache(async (refresh = false): Promise<{ id: string; no
     return [];
   }
 
-  cachedMarcas = data;
   return data;
 });
