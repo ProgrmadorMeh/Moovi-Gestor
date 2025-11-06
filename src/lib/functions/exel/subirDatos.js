@@ -97,7 +97,7 @@ export async function subirDatos(file, productType) {
                 shipping: String(row.shipping).toUpperCase() === 'TRUE',
                 discount: row.discount ? Number(row.discount) : null,
                 installments: row.installments ? Number(row.installments) : null,
-                installmentPrice: row.installmentPrice ? Number(row.installmentPrice) : null,
+                installPrice: row.installPrice ? Number(row.installPrice) : null,
                 imageUrl: row.imageUrl ? JSON.parse(row.imageUrl) : [],
               };
               

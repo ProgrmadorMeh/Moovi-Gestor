@@ -14,7 +14,7 @@ type BaseProduct = {
   imageUrl: string | string[] | null;
   shipping: boolean;
   installments?: number;
-  installmentPrice?: number;
+  installPrice?: number;
   color: string;
   dataTecnica?: any;
 };

@@ -38,7 +38,7 @@ export function ProductFinancingFields({ control }: ProductFinancingFieldsProps)
       />
       <FormField
         control={control}
-        name="installmentPrice"
+        name="installPrice"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Precio por Cuota ($)</FormLabel>

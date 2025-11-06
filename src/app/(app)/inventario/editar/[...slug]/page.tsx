@@ -50,7 +50,7 @@ const baseSchema = {
   discount: z.coerce.number().optional(),
   shipping: z.boolean().optional(),
   installments: z.coerce.number().optional(),
-  installmentPrice: z.coerce.number().optional(),
+  installPrice: z.coerce.number().optional(),
 };
 
 const cellphoneSchema = z.object({
@@ -111,7 +111,7 @@ export default function ProductFormPage() {
     // Valores por defecto para evitar errores de uncontrolled/controlled
     defaultValues: {
         brand: '', model: '', color: '', salePrice: 0, stock: 0, description: '', imei: '',
-        category: '', dataTecnica: [], costPrice: 0, discount: 0, shipping: false, installments: 0, installmentPrice: 0
+        category: '', dataTecnica: [], costPrice: 0, discount: 0, shipping: false, installments: 0, installPrice: 0
     }
   });
 

@@ -46,7 +46,7 @@ const baseSchema = {
   discount: z.coerce.number().optional(),
   shipping: z.boolean().optional(),
   installments: z.coerce.number().optional(),
-  installmentPrice: z.coerce.number().optional(),
+  installPrice: z.coerce.number().optional(),
 };
 
 const cellphoneSchema = z.object({
@@ -77,7 +77,7 @@ const defaultCommonValues = {
   discount: 0,
   shipping: false,
   installments: 0,
-  installmentPrice: 0,
+  installPrice: 0,
 };
 
 const defaultCellphoneValues: Partial<CellphoneFormValues> = {
