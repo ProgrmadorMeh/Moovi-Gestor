@@ -1,6 +1,6 @@
 
 import * as XLSX from 'xlsx';
-import { supabase } from '../../supabaseClient.js'; // Asegúrate de importar tu cliente
+import { supabase } from '../../supabaseClient.js';
 import { methodPost } from '../metodos/methodPost.js';
 
 export async function subirDatos(file, productType) {
@@ -25,7 +25,7 @@ export async function subirDatos(file, productType) {
         // 🔹 Obtener todas las marcas disponibles desde Supabase
         const { data: marcas, error: marcasError } = await supabase
           .from('marcas')
-          .select('id, nombre'); // Cambiado de 'brand' a 'nombre'
+          .select('id, nombre');
 
         if (marcasError) {
           console.error(marcasError);
@@ -59,7 +59,6 @@ export async function subirDatos(file, productType) {
               }
               
               const productData = {
-                // Ya no pasamos 'brand', sino 'id_brand' directamente
                 id_brand: id_brand,
                 model: row.model || '',
                 color: row.color || '',
@@ -82,8 +81,9 @@ export async function subirDatos(file, productType) {
               // 🔧 Agregar dataTecnica si es celular
               if (productType === 'celular') {
                 const dataTecnica = {};
-                const techKeys = ["Pantalla", "Procesador", "RAM", "Almacenamiento", "Cámara Principal", "Batería", "Sistema Operativo"];
+                const techKeys = ["Pantalla", "Procesador", "RAM", "Almacenamiento", "Cámara Principal", "Batería", "Sistema Operativo", "Capacidad", "Dimensiones", "Peso", "Conectividad"];
                 techKeys.forEach(key => {
+                    // Maneja el caso de "Cámara Principal" que puede tener un espacio
                     if(row[key]) dataTecnica[key] = row[key];
                 })
                 productData.dataTecnica = dataTecnica;
