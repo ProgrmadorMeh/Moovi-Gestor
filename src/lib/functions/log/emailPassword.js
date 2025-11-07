@@ -19,6 +19,8 @@ export async function emailPassword(email) {
     }
 
     const redirectUrl = `${window.location.origin}/update-password`;
+    console.log(`${window.location.origin}/update-password`);
+
     console.log("🔗 URL de redirección configurada:", redirectUrl);
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
