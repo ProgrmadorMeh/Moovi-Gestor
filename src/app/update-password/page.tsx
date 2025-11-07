@@ -32,8 +32,9 @@ const formSchema = z.object({
 export default function UpdatePasswordPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isSessionReady, setIsSessionReady] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,24 +42,25 @@ export default function UpdatePasswordPage() {
   );
 
   useEffect(() => {
-    // Obtener el code de la URL
     const queryParams = new URLSearchParams(window.location.search);
-    const recoveryCode = queryParams.get("code");
+    const code = queryParams.get("code");
 
-    if (!recoveryCode) {
+    if (!code) {
       setLoading(false);
       return;
     }
 
-    // Intercambiar el code por una sesión temporal
+    setRecoveryCode(code);
+
+    // Verificar el código de recuperación y crear sesión temporal
     supabase.auth
-      .updateUser({ password: "" }, { code: recoveryCode }) // se crea sesión temporal
+      .verifyOtp({ type: "recovery", token: code })
       .then(({ data, error }) => {
         if (error) {
-          console.error("Error al validar el code:", error);
-          setIsSessionReady(false);
+          console.error("Código inválido o expirado:", error);
+          setSessionReady(false);
         } else {
-          setIsSessionReady(true);
+          setSessionReady(true); // sesión temporal lista
         }
         setLoading(false);
       });
@@ -72,7 +74,7 @@ export default function UpdatePasswordPage() {
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!isSessionReady) {
+    if (!sessionReady || !recoveryCode) {
       toast({
         variant: "destructive",
         title: "Error de Sesión",
@@ -95,7 +97,6 @@ export default function UpdatePasswordPage() {
         description: "Ahora puedes iniciar sesión con tu nueva contraseña.",
       });
 
-      // Cerrar sesión de recuperación y redirigir a login
       await supabase.auth.signOut();
       router.push("/login");
     }
@@ -114,7 +115,7 @@ export default function UpdatePasswordPage() {
     );
   }
 
-  if (!isSessionReady) {
+  if (!sessionReady) {
     return (
       <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
         <Card className="w-full max-w-md">
