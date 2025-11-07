@@ -21,5 +21,3 @@ export async function resetPassword(nuevaContraseña) {
         data: data ?? null,
       }
 }
-
-console.log(await resetPassword("contraseña2"))

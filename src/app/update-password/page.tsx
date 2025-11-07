@@ -16,13 +16,21 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { KeyRound } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 
 const formSchema = z
   .object({
-    password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
+    password: z
+      .string()
+      .min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -44,54 +52,42 @@ export default function UpdatePasswordPage() {
   useEffect(() => {
     const checkRecovery = async () => {
       console.log("🔍 Iniciando verificación de enlace de recuperación...");
-      let token: string | null = null;
-      let refreshToken: string | null = null;
-      let type: string | null = null;
 
-      // Revisar query params (?code=)
-      const queryParams = new URLSearchParams(window.location.search);
-      const codeParam = queryParams.get("code");
-      console.log("🧭 Query code:", codeParam);
-
-      // Revisar hash params (#access_token=)
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
-      const accessToken = hashParams.get("access_token");
-      refreshToken = hashParams.get("refresh_token");
-      type = hashParams.get("type");
-      console.log("🔐 Hash access_token:", accessToken);
-      console.log("🔁 Refresh token:", refreshToken);
+      const access_token = hashParams.get("access_token");
+      const refresh_token = hashParams.get("refresh_token");
+      const type = hashParams.get("type");
+
+      console.log("🧭 Query code:", code);
+      console.log("🔐 Hash access_token:", access_token);
+      console.log("🔁 Refresh token:", refresh_token);
       console.log("📦 Tipo:", type);
 
       try {
-        if (codeParam) {
-          console.log("📨 Intercambiando code por sesión...");
-          const { data, error } = await supabase.auth.exchangeCodeForSession(codeParam);
-          if (error) {
-            console.error("❌ Error al intercambiar code:", error);
-            setIsSessionReady(false);
-          } else {
-            console.log("✅ Sesión creada con code:", data);
-            setIsSessionReady(true);
-          }
-        } else if (accessToken && type === "recovery") {
+        if (access_token && refresh_token && type === "recovery") {
           console.log("⚙️ Configurando sesión con access_token...");
           const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken!,
+            access_token,
+            refresh_token,
           });
-          if (error) {
-            console.error("❌ Error al configurar sesión:", error);
-            setIsSessionReady(false);
-          } else {
-            console.log("✅ Sesión configurada correctamente:", data);
-            setIsSessionReady(true);
-          }
+          if (error) throw error;
+          console.log("✅ Sesión configurada correctamente:", data);
+          setIsSessionReady(true);
+        } else if (code) {
+          // Para compatibilidad con viejos enlaces ?code=
+          console.log("📨 Intercambiando code manualmente...");
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          console.log("✅ Sesión creada con code:", data);
+          setIsSessionReady(true);
         } else {
           console.warn("⚠️ No se encontró ni code ni access_token válido");
           setIsSessionReady(false);
         }
       } catch (err) {
-        console.error("🔥 Error inesperado:", err);
+        console.error("🔥 Error al configurar sesión:", err);
         setIsSessionReady(false);
       } finally {
         setLoading(false);
@@ -99,7 +95,7 @@ export default function UpdatePasswordPage() {
     };
 
     checkRecovery();
-  }, [supabase.auth]);
+  }, [supabase]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -111,16 +107,19 @@ export default function UpdatePasswordPage() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log("💾 Intentando actualizar contraseña...");
     if (!isSessionReady) {
-      console.warn("⚠️ Sesión no lista, no se puede actualizar contraseña");
       toast({
         variant: "destructive",
         title: "Error de Sesión",
-        description: "Tu enlace de recuperación ha expirado o es inválido. Solicita uno nuevo.",
+        description:
+          "Tu enlace de recuperación ha expirado o es inválido. Solicita uno nuevo.",
       });
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({ password: values.password });
+    const { error } = await supabase.auth.updateUser({
+      password: values.password,
+    });
+
     if (error) {
       console.error("❌ Error al actualizar contraseña:", error);
       toast({
@@ -144,8 +143,12 @@ export default function UpdatePasswordPage() {
       <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">Verificando enlace...</CardTitle>
-            <CardDescription>Aguarda mientras validamos tu enlace de recuperación.</CardDescription>
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              Verificando enlace...
+            </CardTitle>
+            <CardDescription>
+              Aguarda mientras validamos tu enlace de recuperación.
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -157,8 +160,13 @@ export default function UpdatePasswordPage() {
       <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">Enlace Inválido o Expirado</CardTitle>
-            <CardDescription>El enlace de recuperación es inválido o ha expirado. Solicita uno nuevo.</CardDescription>
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              Enlace Inválido o Expirado
+            </CardTitle>
+            <CardDescription>
+              El enlace de recuperación es inválido o ha expirado. Solicita uno
+              nuevo.
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -169,8 +177,12 @@ export default function UpdatePasswordPage() {
     <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight">Establecer Nueva Contraseña</CardTitle>
-          <CardDescription>Ingresa tu nueva contraseña a continuación.</CardDescription>
+          <CardTitle className="text-2xl font-bold tracking-tight">
+            Establecer Nueva Contraseña
+          </CardTitle>
+          <CardDescription>
+            Ingresa tu nueva contraseña a continuación.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -202,7 +214,13 @@ export default function UpdatePasswordPage() {
                 )}
               />
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Actualizando..." : <><KeyRound className="mr-2 h-4 w-4" /> Actualizar Contraseña</>}
+                {isSubmitting ? (
+                  "Actualizando..."
+                ) : (
+                  <>
+                    <KeyRound className="mr-2 h-4 w-4" /> Actualizar Contraseña
+                  </>
+                )}
               </Button>
             </form>
           </Form>
