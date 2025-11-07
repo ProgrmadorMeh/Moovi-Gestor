@@ -53,12 +53,16 @@ export default function UpdatePasswordPage() {
     const checkRecovery = async () => {
       console.log("🔍 Iniciando verificación de enlace de recuperación...");
 
-      const url = new URL(window.location.href);
-      const code = url.searchParams.get("code");
-      const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      // 🔹 Forzar lectura del hash (Supabase moderno)
+      const hash = window.location.hash;
+      const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
       const access_token = hashParams.get("access_token");
       const refresh_token = hashParams.get("refresh_token");
       const type = hashParams.get("type");
+
+      // 🔹 También leer ?code= (Supabase legacy)
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
 
       console.log("🧭 Query code:", code);
       console.log("🔐 Hash access_token:", access_token);
@@ -67,7 +71,7 @@ export default function UpdatePasswordPage() {
 
       try {
         if (access_token && refresh_token && type === "recovery") {
-          console.log("⚙️ Configurando sesión con access_token...");
+          console.log("⚙️ Configurando sesión con access_token (hash)...");
           const { data, error } = await supabase.auth.setSession({
             access_token,
             refresh_token,
@@ -76,9 +80,13 @@ export default function UpdatePasswordPage() {
           console.log("✅ Sesión configurada correctamente:", data);
           setIsSessionReady(true);
         } else if (code) {
-          // Para compatibilidad con viejos enlaces ?code=
-          console.log("📨 Intercambiando code manualmente...");
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          console.log("📨 Intercambiando code por sesión...");
+          // 🔹 Si recibís ?code= en lugar de hash, reemplazá la URL y forzá el hash
+          window.location.replace(
+            `${window.location.origin}/update-password#type=recovery`
+          );
+          const { data, error } =
+            await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
           console.log("✅ Sesión creada con code:", data);
           setIsSessionReady(true);
