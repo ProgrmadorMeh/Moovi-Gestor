@@ -44,6 +44,39 @@ export async function methodPut(tabla, datos){
       campos.id_brand = marcaId;
       delete campos.brand;
     }
+    
+    // --- LÓGICA DE ACTUALIZACIÓN DE IMÁGENES ---
+    let finalImageUrls = campos.imageUrl || [];
+
+    if (datos.files && Array.isArray(datos.files) && datos.files.length > 0) {
+      const uploadedUrls = [];
+      const randomString = () => Math.random().toString(36).substring(2);
+
+      for (const file of datos.files) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${randomString()}-${Date.now()}.${fileExt}`;
+        const filePath = `public/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('celImagen')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          return { success: false, message: `Error al subir ${file.name}: ${uploadError.message}`, data: null };
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('celImagen')
+          .getPublicUrl(filePath);
+        
+        uploadedUrls.push(publicUrlData.publicUrl);
+      }
+      // Combina las imágenes existentes con las nuevas
+      finalImageUrls = [...finalImageUrls, ...uploadedUrls];
+    }
+    
+    campos.imageUrl = finalImageUrls;
+
      // Eliminar campos que no deben ir a la DB directamente
     delete campos.files;
     delete campos.nombre_marca;
