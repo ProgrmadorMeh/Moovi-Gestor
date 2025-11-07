@@ -21,20 +21,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { KeyRound } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 
-const formSchema = z.object({
-  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Las contraseñas no coinciden.",
-  path: ["confirmPassword"],
-});
+const formSchema = z
+  .object({
+    password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Las contraseñas no coinciden.",
+    path: ["confirmPassword"],
+  });
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [sessionReady, setSessionReady] = useState(false);
-  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
+  const [code, setCode] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,28 +43,9 @@ export default function UpdatePasswordPage() {
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
-    const code = queryParams.get("code");
-
-    if (!code) {
-      setLoading(false);
-      return;
-    }
-
-    setRecoveryCode(code);
-
-    // Verificar el código de recuperación y crear sesión temporal
-    supabase.auth
-      .verifyOtp({ type: "recovery", token: code })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("Código inválido o expirado:", error);
-          setSessionReady(false);
-        } else {
-          setSessionReady(true); // sesión temporal lista
-        }
-        setLoading(false);
-      });
-  }, [supabase.auth]);
+    const recoveryCode = queryParams.get("code");
+    setCode(recoveryCode);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -74,11 +55,11 @@ export default function UpdatePasswordPage() {
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!sessionReady || !recoveryCode) {
+    if (!code) {
       toast({
         variant: "destructive",
         title: "Error de Sesión",
-        description: "Tu enlace de recuperación ha expirado o es inválido. Solicita uno nuevo.",
+        description: "No se detectó código de recuperación en la URL. Solicita un nuevo enlace.",
       });
       return;
     }
@@ -102,38 +83,14 @@ export default function UpdatePasswordPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">Verificando enlace...</CardTitle>
-            <CardDescription>Aguarde mientras validamos tu enlace de recuperación.</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!sessionReady) {
-    return (
-      <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">Enlace Inválido o Expirado</CardTitle>
-            <CardDescription>El enlace de recuperación es inválido o ha expirado. Por favor, solicita uno nuevo.</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">Establecer Nueva Contraseña</CardTitle>
-          <CardDescription>Ingresa tu nueva contraseña a continuación.</CardDescription>
+          <CardDescription>
+            Ingresa tu nueva contraseña a continuación.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -165,7 +122,7 @@ export default function UpdatePasswordPage() {
                 )}
               />
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Actualizando...' : <><KeyRound className="mr-2 h-4 w-4" /> Actualizar Contraseña</>}
+                {isSubmitting ? "Actualizando..." : <><KeyRound className="mr-2 h-4 w-4" /> Actualizar Contraseña</>}
               </Button>
             </form>
           </Form>
