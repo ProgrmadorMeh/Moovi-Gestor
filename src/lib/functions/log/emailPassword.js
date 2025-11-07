@@ -19,7 +19,8 @@ export async function emailPassword(email) {
     }
 
     // 🔧 Importante: agregamos el '#' al final para forzar tokens en el hash
-    const redirectUrl = `${window.location.origin}/update-password#`;
+    const redirectUrl = `${window.location.origin}/update-password#type=recovery`;
+
     console.log("🔗 URL de redirección configurada con hash:", redirectUrl);
 
     // 📤 Enviamos la solicitud de recuperación a Supabase
