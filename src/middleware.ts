@@ -9,19 +9,27 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getSession();
 
   const { pathname } = request.nextUrl;
+  const publicRoutes = ['/login', '/register', '/reset-password', '/update-password'];
 
   // If no session, and trying to access a protected route
-  if (!session && !['/login', '/register', '/reset-password'].includes(pathname)) {
+  if (!session && !publicRoutes.includes(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  // If session exists, and trying to access login, register, or root, redirect to dashboard
-  if (session && ['/login', '/register', '/reset-password', '/'].includes(pathname)) {
+  // If session exists, and trying to access a public route (except root which redirects)
+  if (session && publicRoutes.includes(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
+  }
+
+  // If root, redirect to dashboard (whether logged in or not, auth guard will handle)
+  if (pathname === '/') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
   }
 
   return response;

@@ -1,11 +1,11 @@
+
 "use client";
 
-import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,61 +18,66 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { login } from "./actions";
+import { updatePassword } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { LogIn } from "lucide-react";
+import { KeyRound } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 
 const formSchema = z.object({
-  email: z.string().email({
-    message: "Por favor, introduce una dirección de correo válida.",
+  password: z.string().min(6, {
+    message: "La contraseña debe tener al menos 6 caracteres.",
   }),
-  password: z.string().min(1, {
-    message: "La contraseña no puede estar vacía.",
-  }),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden.",
+  path: ["confirmPassword"],
 });
 
-export default function LoginPage() {
+
+export default function UpdatePasswordPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const [hasSession, setHasSession] = useState(false);
 
   const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-
+  
   useEffect(() => {
-    const clearSession = async () => {
-      // Clear any lingering session to prevent token errors on login page
-      await supabase.auth.signOut();
-    };
-    clearSession();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setHasSession(true);
+        }
+    });
+
+    return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const result = await login(values);
+    const result = await updatePassword(values.password);
 
     if (result.success) {
       toast({
-        title: "¡Bienvenido de vuelta!",
-        description: "Has iniciado sesión correctamente.",
+        title: "Contraseña Actualizada",
+        description: "Tu contraseña ha sido cambiada con éxito. Ya puedes iniciar sesión.",
       });
-      // The middleware will handle the redirect, no need for router.push
-      router.refresh();
+      await supabase.auth.signOut();
+      router.push("/login");
     } else {
       toast({
         variant: "destructive",
-        title: "Error al iniciar sesión",
+        title: "Error al actualizar",
         description: result.message,
       });
     }
@@ -82,31 +87,20 @@ export default function LoginPage() {
     <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
         <Card className="w-full max-w-md">
             <CardHeader className="text-center">
-                <CardTitle className="text-2xl font-bold tracking-tight">Iniciar Sesión</CardTitle>
-                <CardDescription>Accede a tu cuenta para continuar.</CardDescription>
+                <CardTitle className="text-2xl font-bold tracking-tight">Establecer Nueva Contraseña</CardTitle>
+                <CardDescription>
+                  {hasSession ? "Has sido verificado. Ingresa tu nueva contraseña." : "Por favor, espera a ser verificado desde el email..."}
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         <FormField
                         control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Correo Electrónico</FormLabel>
-                            <FormControl>
-                                <Input type="email" placeholder="tu.correo@ejemplo.com" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <FormField
-                        control={form.control}
                         name="password"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Contraseña</FormLabel>
+                            <FormLabel>Nueva Contraseña</FormLabel>
                             <FormControl>
                                 <Input type="password" placeholder="••••••••" {...field} />
                             </FormControl>
@@ -114,24 +108,24 @@ export default function LoginPage() {
                             </FormItem>
                         )}
                         />
-                        <Button type="submit" className="w-full" disabled={isSubmitting}>
-                            {isSubmitting ? 'Iniciando...' : <><LogIn className="mr-2 h-4 w-4" /> Iniciar Sesión</>}
+                         <FormField
+                        control={form.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Confirmar Nueva Contraseña</FormLabel>
+                            <FormControl>
+                                <Input type="password" placeholder="••••••••" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <Button type="submit" className="w-full" disabled={isSubmitting || !hasSession}>
+                            {isSubmitting ? 'Actualizando...' : <><KeyRound className="mr-2 h-4 w-4" /> Actualizar Contraseña</>}
                         </Button>
                     </form>
                 </Form>
-                <div className="mt-6 text-center text-sm">
-                    <p className="text-muted-foreground">
-                        ¿No tienes una cuenta?{" "}
-                        <Link href="/register" className="font-medium text-primary hover:underline">
-                            Regístrate aquí
-                        </Link>
-                    </p>
-                    <p className="text-muted-foreground mt-2">
-                        <Link href="/reset-password" passHref className="font-medium text-primary hover:underline">
-                          ¿Olvidaste tu contraseña?
-                        </Link>
-                      </p>
-                </div>
             </CardContent>
         </Card>
     </div>

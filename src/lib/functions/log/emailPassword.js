@@ -8,7 +8,7 @@ import { supabase } from '../../supabaseClient';
 export async function emailPassword(email) {
   try{
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "https://Moovi.com/reset-password", // Direccion donde llevara el email
+        redirectTo: `${window.location.origin}/update-password`, // Direccion donde llevara el email
       })
 
   if (error) return {
