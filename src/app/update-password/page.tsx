@@ -41,28 +41,28 @@ export default function UpdatePasswordPage() {
   );
 
   useEffect(() => {
-    // When the user lands on this page from a recovery link,
-    // Supabase automatically handles the session from the URL hash.
-    // We listen for the PASSWORD_RECOVERY event to confirm this.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setIsSessionReady(true);
-        setLoading(false);
-      }
-    });
+    // Obtener el code de la URL
+    const queryParams = new URLSearchParams(window.location.search);
+    const recoveryCode = queryParams.get("code");
 
-    // Timeout to handle cases where the link is invalid or expired
-    const timer = setTimeout(() => {
-        if (!isSessionReady) {
-            setLoading(false);
+    if (!recoveryCode) {
+      setLoading(false);
+      return;
+    }
+
+    // Intercambiar el code por una sesión temporal
+    supabase.auth
+      .updateUser({ password: "" }, { code: recoveryCode }) // se crea sesión temporal
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error al validar el code:", error);
+          setIsSessionReady(false);
+        } else {
+          setIsSessionReady(true);
         }
-    }, 5000); // Wait 5 seconds for the event
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(timer);
-    };
-  }, [supabase.auth, isSessionReady]);
+        setLoading(false);
+      });
+  }, [supabase.auth]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -95,7 +95,7 @@ export default function UpdatePasswordPage() {
         description: "Ahora puedes iniciar sesión con tu nueva contraseña.",
       });
 
-      // Sign out to clear the recovery session and redirect to login
+      // Cerrar sesión de recuperación y redirigir a login
       await supabase.auth.signOut();
       router.push("/login");
     }
