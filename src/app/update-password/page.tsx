@@ -45,8 +45,7 @@ export default function UpdatePasswordPage() {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const queryParams = new URLSearchParams(window.location.search);
     
-    let token = hashParams.get("access_token") || queryParams.get("access_token");
-    
+    const token = hashParams.get("access_token") || queryParams.get("access_token");
     if (token) setAccessToken(token);
     setLoading(false);
   }, []);
@@ -68,9 +67,10 @@ export default function UpdatePasswordPage() {
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({
-      password: values.password
-    }, { accessToken });
+    const { error } = await supabase.auth.updateUser(
+      { password: values.password },
+      { accessToken }
+    );
 
     if (error) {
       toast({
