@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -44,34 +43,59 @@ export default function UpdatePasswordPage() {
 
   useEffect(() => {
     const checkRecovery = async () => {
+      console.log("🔍 Iniciando verificación de enlace de recuperación...");
       let token: string | null = null;
+      let refreshToken: string | null = null;
+      let type: string | null = null;
 
       // Revisar query params (?code=)
       const queryParams = new URLSearchParams(window.location.search);
-      token = queryParams.get("code");
+      const codeParam = queryParams.get("code");
+      console.log("🧭 Query code:", codeParam);
 
       // Revisar hash params (#access_token=)
-      if (!token && window.location.hash) {
-        const hashParams = new URLSearchParams(window.location.hash.slice(1));
-        token = hashParams.get("access_token");
-      }
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      const accessToken = hashParams.get("access_token");
+      refreshToken = hashParams.get("refresh_token");
+      type = hashParams.get("type");
+      console.log("🔐 Hash access_token:", accessToken);
+      console.log("🔁 Refresh token:", refreshToken);
+      console.log("📦 Tipo:", type);
 
-      if (!token) {
+      try {
+        if (codeParam) {
+          console.log("📨 Intercambiando code por sesión...");
+          const { data, error } = await supabase.auth.exchangeCodeForSession(codeParam);
+          if (error) {
+            console.error("❌ Error al intercambiar code:", error);
+            setIsSessionReady(false);
+          } else {
+            console.log("✅ Sesión creada con code:", data);
+            setIsSessionReady(true);
+          }
+        } else if (accessToken && type === "recovery") {
+          console.log("⚙️ Configurando sesión con access_token...");
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken!,
+          });
+          if (error) {
+            console.error("❌ Error al configurar sesión:", error);
+            setIsSessionReady(false);
+          } else {
+            console.log("✅ Sesión configurada correctamente:", data);
+            setIsSessionReady(true);
+          }
+        } else {
+          console.warn("⚠️ No se encontró ni code ni access_token válido");
+          setIsSessionReady(false);
+        }
+      } catch (err) {
+        console.error("🔥 Error inesperado:", err);
         setIsSessionReady(false);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      // ✅ Verificar token de recuperación con el nuevo método
-      const { data, error } = await supabase.auth.exchangeCodeForSession(token);
-
-      if (error || !data.session) {
-        console.error("Código inválido o expirado:", error);
-        setIsSessionReady(false);
-      } else {
-        setIsSessionReady(true);
-      }
-      setLoading(false);
     };
 
     checkRecovery();
@@ -85,7 +109,9 @@ export default function UpdatePasswordPage() {
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log("💾 Intentando actualizar contraseña...");
     if (!isSessionReady) {
+      console.warn("⚠️ Sesión no lista, no se puede actualizar contraseña");
       toast({
         variant: "destructive",
         title: "Error de Sesión",
@@ -95,14 +121,15 @@ export default function UpdatePasswordPage() {
     }
 
     const { error } = await supabase.auth.updateUser({ password: values.password });
-
     if (error) {
+      console.error("❌ Error al actualizar contraseña:", error);
       toast({
         variant: "destructive",
         title: "Error al actualizar",
         description: `No se pudo actualizar la contraseña. Error: ${error.message}`,
       });
     } else {
+      console.log("✅ Contraseña actualizada correctamente");
       toast({
         title: "Contraseña actualizada",
         description: "Ahora puedes iniciar sesión con tu nueva contraseña.",
