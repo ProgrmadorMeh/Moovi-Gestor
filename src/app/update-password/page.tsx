@@ -43,31 +43,39 @@ export default function UpdatePasswordPage() {
   );
 
   useEffect(() => {
-    let timedOut = false;
-    const timer = setTimeout(() => {
-      if (!isSessionReady) {
-        timedOut = true;
-        setLoading(false);
-        setIsSessionReady(false);
+    const checkRecovery = async () => {
+      let token: string | null = null;
+
+      // Revisar query params (?code=)
+      const queryParams = new URLSearchParams(window.location.search);
+      token = queryParams.get("code");
+
+      // Revisar hash params (#access_token=)
+      if (!token && window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.slice(1));
+        token = hashParams.get("access_token");
       }
-    }, 5000);
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-        // This event is fired when the user clicks the password recovery link
-        // The Supabase client automatically handles the 'code' from the URL
-        if (event === "PASSWORD_RECOVERY" && !timedOut) {
-            setIsSessionReady(true);
-            setLoading(false);
-            clearTimeout(timer);
-        }
-    });
+      if (!token) {
+        setIsSessionReady(false);
+        setLoading(false);
+        return;
+      }
 
-    return () => {
-      authListener.subscription.unsubscribe();
-      clearTimeout(timer);
+      // ✅ Verificar token de recuperación con el nuevo método
+      const { data, error } = await supabase.auth.exchangeCodeForSession(token);
+
+      if (error || !data.session) {
+        console.error("Código inválido o expirado:", error);
+        setIsSessionReady(false);
+      } else {
+        setIsSessionReady(true);
+      }
+      setLoading(false);
     };
-  }, [supabase.auth, isSessionReady]);
-  
+
+    checkRecovery();
+  }, [supabase.auth]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,7 +84,7 @@ export default function UpdatePasswordPage() {
 
   const { isSubmitting } = form.formState;
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!isSessionReady) {
       toast({
         variant: "destructive",
@@ -99,11 +107,10 @@ export default function UpdatePasswordPage() {
         title: "Contraseña actualizada",
         description: "Ahora puedes iniciar sesión con tu nueva contraseña.",
       });
-
       await supabase.auth.signOut();
       router.push("/login");
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -111,7 +118,7 @@ export default function UpdatePasswordPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold tracking-tight">Verificando enlace...</CardTitle>
-            <CardDescription>Aguarde mientras validamos tu enlace de recuperación.</CardDescription>
+            <CardDescription>Aguarda mientras validamos tu enlace de recuperación.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -124,7 +131,7 @@ export default function UpdatePasswordPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold tracking-tight">Enlace Inválido o Expirado</CardTitle>
-            <CardDescription>El enlace de recuperación es inválido o ha expirado. Por favor, solicita uno nuevo.</CardDescription>
+            <CardDescription>El enlace de recuperación es inválido o ha expirado. Solicita uno nuevo.</CardDescription>
           </CardHeader>
         </Card>
       </div>
