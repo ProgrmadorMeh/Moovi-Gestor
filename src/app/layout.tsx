@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
+import { ChatbaseWidget } from '@/components/chatbase-widget';
 
 export const metadata: Metadata = {
   title: 'Moovi - Gestor de Tienda',
@@ -32,6 +33,7 @@ export default function RootLayout({
         >
           {children}
           <Toaster />
+          <ChatbaseWidget />
         </ThemeProvider>
       </body>
     </html>
