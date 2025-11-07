@@ -35,7 +35,7 @@ export default function UpdatePasswordPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [sessionReady, setSessionReady] = useState(false);
+  const [isSessionReady, setIsSessionReady] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,28 +43,31 @@ export default function UpdatePasswordPage() {
   );
 
   useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
-    const code = queryParams.get("code");
-
-    if (!code) {
-      setLoading(false);
-      setSessionReady(false);
-      return;
-    }
-
-    // Crear sesión temporal con el código de recuperación
-    supabase.auth
-      .verifyOtp({ type: "recovery", token: code })
-      .then(({ data, error }) => {
-        if (error || !data) {
-          console.error("Código inválido o expirado:", error);
-          setSessionReady(false);
-        } else {
-          setSessionReady(true); // sesión temporal lista
-        }
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      if (!isSessionReady) {
+        timedOut = true;
         setLoading(false);
-      });
-  }, [supabase.auth]);
+        setIsSessionReady(false);
+      }
+    }, 5000);
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        // This event is fired when the user clicks the password recovery link
+        // The Supabase client automatically handles the 'code' from the URL
+        if (event === "PASSWORD_RECOVERY" && !timedOut) {
+            setIsSessionReady(true);
+            setLoading(false);
+            clearTimeout(timer);
+        }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+      clearTimeout(timer);
+    };
+  }, [supabase.auth, isSessionReady]);
+  
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -74,7 +77,7 @@ export default function UpdatePasswordPage() {
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!sessionReady) {
+    if (!isSessionReady) {
       toast({
         variant: "destructive",
         title: "Error de Sesión",
@@ -83,7 +86,6 @@ export default function UpdatePasswordPage() {
       return;
     }
 
-    // Ahora sí hay sesión → actualizar contraseña
     const { error } = await supabase.auth.updateUser({ password: values.password });
 
     if (error) {
@@ -116,7 +118,7 @@ export default function UpdatePasswordPage() {
     );
   }
 
-  if (!sessionReady) {
+  if (!isSessionReady) {
     return (
       <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
         <Card className="w-full max-w-md">
