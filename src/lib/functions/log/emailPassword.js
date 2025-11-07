@@ -19,7 +19,7 @@ export async function emailPassword(email) {
     }
 
     // 🔧 Importante: agregamos el '#' al final para forzar tokens en el hash
-    const redirectUrl = `${window.location.origin}/update-password#type=recovery`;
+    const redirectUrl = `${window.location.origin}/update-password`;
 
     console.log("🔗 URL de redirección configurada con hash:", redirectUrl);
 
