@@ -21,13 +21,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { KeyRound } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 
-
 const formSchema = z.object({
-  password: z.string().min(6, {
-    message: "La contraseña debe tener al menos 6 caracteres.",
-  }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
   confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
+}).refine(data => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden.",
   path: ["confirmPassword"],
 });
@@ -44,23 +41,19 @@ export default function UpdatePasswordPage() {
   );
 
   useEffect(() => {
-    // Supabase sends the token in the URL hash, e.g., #access_token=...
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.substring(1)); // Remove '#' and parse
-    const token = params.get("access_token");
-
-    if (token) {
-      setAccessToken(token);
-    }
+    // Revisar hash (#access_token=...) y query params (?access_token=...)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    
+    let token = hashParams.get("access_token") || queryParams.get("access_token");
+    
+    if (token) setAccessToken(token);
     setLoading(false);
   }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      password: "",
-      confirmPassword: "",
-    },
+    defaultValues: { password: "", confirmPassword: "" },
   });
 
   const { isSubmitting } = form.formState;
@@ -70,27 +63,25 @@ export default function UpdatePasswordPage() {
       toast({
         variant: "destructive",
         title: "Error de Sesión",
-        description: "Tu sesión de recuperación ha expirado o es inválida. Por favor, solicita un nuevo enlace.",
+        description: "Tu enlace de recuperación ha expirado o es inválido. Solicita uno nuevo.",
       });
       return;
     }
-    
-    // We can now use the token to update the user's password directly on the client.
-    // This is secure because the token is a one-time use credential for this specific action.
+
     const { error } = await supabase.auth.updateUser({
       password: values.password
-    });
-    
+    }, { accessToken });
+
     if (error) {
-       toast({
+      toast({
         variant: "destructive",
         title: "Error al actualizar",
-        description: `Error al actualizar la contraseña: ${error.message}`,
+        description: `No se pudo actualizar la contraseña: ${error.message}`,
       });
     } else {
       toast({
-        title: "Contraseña Actualizada",
-        description: "Tu contraseña ha sido cambiada con éxito. Ya puedes iniciar sesión.",
+        title: "Contraseña actualizada",
+        description: "Ahora puedes iniciar sesión con tu nueva contraseña.",
       });
       await supabase.auth.signOut();
       router.push("/login");
@@ -98,17 +89,17 @@ export default function UpdatePasswordPage() {
   }
 
   if (loading) {
-     return (
+    return (
       <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold tracking-tight">Verificando enlace...</CardTitle>
+            <CardDescription>Aguarde mientras validamos tu enlace de recuperación.</CardDescription>
           </CardHeader>
         </Card>
       </div>
     );
   }
-
 
   if (!accessToken) {
     return (
@@ -116,9 +107,7 @@ export default function UpdatePasswordPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold tracking-tight">Enlace Inválido</CardTitle>
-            <CardDescription>
-              El enlace de recuperación es inválido o ha expirado. Por favor, solicita uno nuevo.
-            </CardDescription>
+            <CardDescription>El enlace de recuperación es inválido o ha expirado. Por favor, solicita uno nuevo.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -130,9 +119,7 @@ export default function UpdatePasswordPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">Establecer Nueva Contraseña</CardTitle>
-          <CardDescription>
-            Ingresa tu nueva contraseña a continuación.
-          </CardDescription>
+          <CardDescription>Ingresa tu nueva contraseña a continuación.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
