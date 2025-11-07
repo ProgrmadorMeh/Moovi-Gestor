@@ -20,7 +20,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { KeyRound } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
-import { updatePassword } from "./actions";
 
 
 const formSchema = z.object({
@@ -36,7 +35,8 @@ const formSchema = z.object({
 export default function UpdatePasswordPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isSessionReady, setIsSessionReady] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,28 +44,16 @@ export default function UpdatePasswordPage() {
   );
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user.aud === "authenticated") {
-        // This event fires when the user arrives from a password recovery link.
-        // The session is temporarily authenticated to allow the password update.
-        setIsSessionReady(true);
-      }
-    });
+    // Supabase sends the token in the URL hash, e.g., #access_token=...
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.substring(1)); // Remove '#' and parse
+    const token = params.get("access_token");
 
-    // Also check if there's already a session on mount (though less likely for this page)
-    const checkSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            setIsSessionReady(true);
-        }
-    };
-    checkSession();
-
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, [supabase.auth]);
+    if (token) {
+      setAccessToken(token);
+    }
+    setLoading(false);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -78,7 +66,7 @@ export default function UpdatePasswordPage() {
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-     if (!isSessionReady) {
+    if (!accessToken) {
       toast({
         variant: "destructive",
         title: "Error de Sesión",
@@ -87,32 +75,49 @@ export default function UpdatePasswordPage() {
       return;
     }
     
-    const result = await updatePassword(values.password);
-
-    if (result.success) {
+    // We can now use the token to update the user's password directly on the client.
+    // This is secure because the token is a one-time use credential for this specific action.
+    const { error } = await supabase.auth.updateUser({
+      password: values.password
+    });
+    
+    if (error) {
+       toast({
+        variant: "destructive",
+        title: "Error al actualizar",
+        description: `Error al actualizar la contraseña: ${error.message}`,
+      });
+    } else {
       toast({
         title: "Contraseña Actualizada",
         description: "Tu contraseña ha sido cambiada con éxito. Ya puedes iniciar sesión.",
       });
       await supabase.auth.signOut();
       router.push("/login");
-    } else {
-       toast({
-        variant: "destructive",
-        title: "Error al actualizar",
-        description: result.message,
-      });
     }
   }
 
-  if (!isSessionReady) {
+  if (loading) {
+     return (
+      <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold tracking-tight">Verificando enlace...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+
+  if (!accessToken) {
     return (
       <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">Verificando sesión...</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">Enlace Inválido</CardTitle>
             <CardDescription>
-              Aguarde mientras validamos su enlace de recuperación.
+              El enlace de recuperación es inválido o ha expirado. Por favor, solicita uno nuevo.
             </CardDescription>
           </CardHeader>
         </Card>
