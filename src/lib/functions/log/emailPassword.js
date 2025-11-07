@@ -18,11 +18,11 @@ export async function emailPassword(email) {
       };
     }
 
-    const redirectUrl = `${window.location.origin}/update-password`;
-    console.log(`${window.location.origin}/update-password`);
+    // 🔧 Importante: agregamos el '#' al final para forzar tokens en el hash
+    const redirectUrl = `${window.location.origin}/update-password#`;
+    console.log("🔗 URL de redirección configurada con hash:", redirectUrl);
 
-    console.log("🔗 URL de redirección configurada:", redirectUrl);
-
+    // 📤 Enviamos la solicitud de recuperación a Supabase
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
     });
