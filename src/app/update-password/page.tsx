@@ -32,7 +32,7 @@ const formSchema = z.object({
 export default function UpdatePasswordPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isSessionReady, setIsSessionReady] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const supabase = createBrowserClient(
@@ -41,17 +41,28 @@ export default function UpdatePasswordPage() {
   );
 
   useEffect(() => {
-    // Supabase password recovery links use the URL hash.
-    // Example: https://.../update-password#access_token=...
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.substring(1)); // Remove '#'
-    const token = params.get('access_token');
-    
-    if (token) {
-      setAccessToken(token);
-    }
-    setLoading(false);
-  }, []);
+    // When the user lands on this page from a recovery link,
+    // Supabase automatically handles the session from the URL hash.
+    // We listen for the PASSWORD_RECOVERY event to confirm this.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsSessionReady(true);
+        setLoading(false);
+      }
+    });
+
+    // Timeout to handle cases where the link is invalid or expired
+    const timer = setTimeout(() => {
+        if (!isSessionReady) {
+            setLoading(false);
+        }
+    }, 5000); // Wait 5 seconds for the event
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timer);
+    };
+  }, [supabase.auth, isSessionReady]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,7 +72,7 @@ export default function UpdatePasswordPage() {
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!accessToken) {
+    if (!isSessionReady) {
       toast({
         variant: "destructive",
         title: "Error de Sesión",
@@ -70,36 +81,21 @@ export default function UpdatePasswordPage() {
       return;
     }
 
-    // supabase.auth.updateUser does not require the accessToken as a parameter when
-    // it's already handled in the session context by the client library.
-    // However, for password recovery flow, we pass it explicitly.
     const { error } = await supabase.auth.updateUser({ password: values.password });
-
 
     if (error) {
       toast({
         variant: "destructive",
         title: "Error al actualizar",
-        description: `No se pudo actualizar la contraseña. Puede que el enlace haya expirado. Error: ${error.message}`,
+        description: `No se pudo actualizar la contraseña. Error: ${error.message}`,
       });
     } else {
-       // This part is tricky. Supabase needs to set a new session.
-       // Let's also set the session for the user upon successful password update.
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: accessToken, // This is not correct but needed to satisfy type, the user will need to log in again.
-      });
-
-      if (sessionError) {
-         console.warn("Could not set session after password update, user may need to log in manually.", sessionError);
-      }
-      
       toast({
         title: "Contraseña actualizada",
         description: "Ahora puedes iniciar sesión con tu nueva contraseña.",
       });
 
-      // It's best practice to sign out and have the user log in again with the new password.
+      // Sign out to clear the recovery session and redirect to login
       await supabase.auth.signOut();
       router.push("/login");
     }
@@ -118,12 +114,12 @@ export default function UpdatePasswordPage() {
     );
   }
 
-  if (!accessToken) {
+  if (!isSessionReady) {
     return (
       <div className="container mx-auto flex min-h-screen items-center justify-center px-4 py-12 pt-32">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">Enlace Inválido</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">Enlace Inválido o Expirado</CardTitle>
             <CardDescription>El enlace de recuperación es inválido o ha expirado. Por favor, solicita uno nuevo.</CardDescription>
           </CardHeader>
         </Card>
