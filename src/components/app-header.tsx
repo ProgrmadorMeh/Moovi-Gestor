@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -27,9 +28,10 @@ import { ThemeToggle } from './theme-toggle';
 const pathToTitle: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
   '/inventario': 'Inventario',
-  '/inventario/nuevo': 'Cargar Nuevo Celular',
+  '/inventario/nuevo': 'Cargar Nuevo Producto',
   '/ventas': 'Registro de Ventas',
   '/usuarios': 'Administración de Usuarios',
+  '/usuarios/nuevo': 'Crear Nuevo Usuario',
 };
 
 export function AppHeader() {
@@ -58,11 +60,23 @@ export function AppHeader() {
           .eq('id', session.user.id)
           .single();
 
-        if (error) {
+        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
           console.error('Error fetching user profile:', error);
-          setUser(null); // Fallback if profile not found
-        } else {
+          setUser(null); // Critical error, fallback to logged out
+        } else if (userData) {
+          // Full profile found
           setUser(userData as AppUser);
+        } else {
+          // No profile found in 'user' table, but user is authenticated.
+          // Fallback to basic user data from the session.
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.email || 'Usuario',
+            role: 'Vendedor', // Default role assumption
+            last_sign_in_at: session.user.last_sign_in_at || '',
+            avatarUrl: undefined,
+          });
         }
       } else {
         setUser(null);
@@ -107,7 +121,7 @@ export function AppHeader() {
             >
               <Avatar>
                 <AvatarImage src={user.avatarUrl?.trim() || 'https://pwxpxouatzzxvvvszdnx.supabase.co/storage/v1/object/public/userImage/userDefault.jpg'} alt="Avatar de usuario" />
-                <AvatarFallback>{user.email ? user.email.slice(0, 2).toUpperCase() : 'US'}</AvatarFallback>
+                <AvatarFallback>{user.name ? user.name.slice(0, 2).toUpperCase() : 'US'}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
