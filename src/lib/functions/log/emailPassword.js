@@ -7,12 +7,28 @@ import { supabase } from '../../supabaseClient';
  */
 export async function emailPassword(email) {
   try {
-    // Enviamos el email de recuperación
+    console.log("📧 Iniciando proceso de recuperación de contraseña para:", email);
+
+    if (!email || typeof email !== "string") {
+      console.error("❌ Email inválido o vacío.");
+      return {
+        success: false,
+        message: "Debes proporcionar un email válido.",
+        data: null,
+      };
+    }
+
+    const redirectUrl = `${window.location.origin}/update-password`;
+    console.log("🔗 URL de redirección configurada:", redirectUrl);
+
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/update-password`,
+      redirectTo: redirectUrl,
     });
 
+    console.log("📨 Respuesta de Supabase:", { data, error });
+
     if (error) {
+      console.error("⚠️ Error al enviar email de recuperación:", error.message);
       return {
         success: false,
         message: `Error al enviar el email de recuperación: ${error.message}`,
@@ -20,12 +36,19 @@ export async function emailPassword(email) {
       };
     }
 
+    if (!data) {
+      console.warn("⚠️ Supabase no devolvió datos en la respuesta.");
+    }
+
+    console.log("✅ Email de recuperación enviado correctamente a:", email);
     return {
       success: true,
-      message: "Email de recuperación enviado correctamente. Revisa tu bandeja de entrada.",
+      message:
+        "Email de recuperación enviado correctamente. Revisa tu bandeja de entrada o correo no deseado.",
       data: data ?? null,
     };
   } catch (err) {
+    console.error("💥 Error inesperado en emailPassword:", err);
     return {
       success: false,
       message: `Error inesperado: ${err.message}`,
