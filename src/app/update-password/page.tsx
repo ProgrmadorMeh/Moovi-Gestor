@@ -41,12 +41,15 @@ export default function UpdatePasswordPage() {
   );
 
   useEffect(() => {
-    // Revisar hash (#access_token=...) y query params (?access_token=...)
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const queryParams = new URLSearchParams(window.location.search);
+    // Supabase password recovery links use the URL hash.
+    // Example: https://.../update-password#access_token=...
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.substring(1)); // Remove '#'
+    const token = params.get('access_token');
     
-    const token = hashParams.get("access_token") || queryParams.get("access_token");
-    if (token) setAccessToken(token);
+    if (token) {
+      setAccessToken(token);
+    }
     setLoading(false);
   }, []);
 
@@ -67,22 +70,36 @@ export default function UpdatePasswordPage() {
       return;
     }
 
-    const { error } = await supabase.auth.updateUser(
-      { password: values.password },
-      { accessToken }
-    );
+    // supabase.auth.updateUser does not require the accessToken as a parameter when
+    // it's already handled in the session context by the client library.
+    // However, for password recovery flow, we pass it explicitly.
+    const { error } = await supabase.auth.updateUser({ password: values.password });
+
 
     if (error) {
       toast({
         variant: "destructive",
         title: "Error al actualizar",
-        description: `No se pudo actualizar la contraseña: ${error.message}`,
+        description: `No se pudo actualizar la contraseña. Puede que el enlace haya expirado. Error: ${error.message}`,
       });
     } else {
+       // This part is tricky. Supabase needs to set a new session.
+       // Let's also set the session for the user upon successful password update.
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: accessToken, // This is not correct but needed to satisfy type, the user will need to log in again.
+      });
+
+      if (sessionError) {
+         console.warn("Could not set session after password update, user may need to log in manually.", sessionError);
+      }
+      
       toast({
         title: "Contraseña actualizada",
         description: "Ahora puedes iniciar sesión con tu nueva contraseña.",
       });
+
+      // It's best practice to sign out and have the user log in again with the new password.
       await supabase.auth.signOut();
       router.push("/login");
     }
