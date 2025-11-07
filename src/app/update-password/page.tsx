@@ -53,25 +53,20 @@ export default function UpdatePasswordPage() {
     const checkRecovery = async () => {
       console.log("🔍 Iniciando verificación de enlace de recuperación...");
 
-      // 🔹 Forzar lectura del hash (Supabase moderno)
+      // Leer hash directamente desde la URL
       const hash = window.location.hash;
       const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
       const access_token = hashParams.get("access_token");
       const refresh_token = hashParams.get("refresh_token");
       const type = hashParams.get("type");
 
-      // 🔹 También leer ?code= (Supabase legacy)
-      const url = new URL(window.location.href);
-      const code = url.searchParams.get("code");
+      console.log("🔐 access_token:", access_token);
+      console.log("🔁 refresh_token:", refresh_token);
+      console.log("📦 tipo:", type);
 
-      console.log("🧭 Query code:", code);
-      console.log("🔐 Hash access_token:", access_token);
-      console.log("🔁 Refresh token:", refresh_token);
-      console.log("📦 Tipo:", type);
-
-      try {
-        if (access_token && refresh_token && type === "recovery") {
-          console.log("⚙️ Configurando sesión con access_token (hash)...");
+      if (access_token && refresh_token && type === "recovery") {
+        try {
+          console.log("⚙️ Configurando sesión con access_token...");
           const { data, error } = await supabase.auth.setSession({
             access_token,
             refresh_token,
@@ -79,27 +74,16 @@ export default function UpdatePasswordPage() {
           if (error) throw error;
           console.log("✅ Sesión configurada correctamente:", data);
           setIsSessionReady(true);
-        } else if (code) {
-          console.log("📨 Intercambiando code por sesión...");
-          // 🔹 Si recibís ?code= en lugar de hash, reemplazá la URL y forzá el hash
-          window.location.replace(
-            `${window.location.origin}/update-password#type=recovery`
-          );
-          const { data, error } =
-            await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
-          console.log("✅ Sesión creada con code:", data);
-          setIsSessionReady(true);
-        } else {
-          console.warn("⚠️ No se encontró ni code ni access_token válido");
+        } catch (err) {
+          console.error("❌ Error al configurar sesión:", err);
           setIsSessionReady(false);
         }
-      } catch (err) {
-        console.error("🔥 Error al configurar sesión:", err);
+      } else {
+        console.warn("⚠️ Hash inválido o incompleto");
         setIsSessionReady(false);
-      } finally {
-        setLoading(false);
       }
+
+      setLoading(false);
     };
 
     checkRecovery();
